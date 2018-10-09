@@ -4,6 +4,7 @@ import lsb
 import cv2
 import os
 import time
+import traceback
 
 app = Flask(__name__)
 
@@ -18,6 +19,14 @@ app.config['UPLOADED_PHOTOS_DEST'] = img_dir
 app.config['UPLOADED_FILES_DEST'] = files_dir
 configure_uploads(app, photoset)
 configure_uploads(app, fileset)
+
+ERROR_LOG_FILE = "error.log"
+
+def write_error_log(e):
+    log = open(ERROR_LOG_FILE, "a")
+    log.write(str(e))
+    log.write(traceback.format_exc())
+    log.close()
 
 @app.route("/")
 def home_page():
@@ -62,6 +71,7 @@ def insert():
                     os.remove(file_name)
                     return send_file(output_fname, as_attachment=True, mimetype="image/png")
                 except Exception as e:
+                    write_error_log(e)
                     error = e
                     os.remove(image_fname)
                     os.remove(file_name)
@@ -85,6 +95,7 @@ def extract():
                     return send_file(file_out, as_attachment=True, 
                         attachment_filename=os.path.basename(file_out))
                 except Exception as e:
+                    write_error_log(e)
                     error = e
                     if os.path.isfile(image_fname):
                         os.remove(image_fname)
