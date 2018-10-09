@@ -1,0 +1,20 @@
+<html>
+<head>
+    <title>insert</title>
+</head>
+<body>
+	<h1>insert</h1>
+		{% if error %}
+		<h2 style="color: red">{{ error }}</h2>
+		{% endif %}
+	<form method=POST enctype=multipart/form-data action="{{ url_for('insert') }}">
+		<h4>Image</h4>
+	    <input type=file name=photo><br>
+	    <h4>File</h4>
+	    <input type=file name=file><br>
+	    <h4>Password</h4>
+	    <input type="text" name=passwd><br><br>
+	    <input type="submit" value="Insert">
+	</form>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<html>
+<head>
+    <title>extract</title>
+</head>
+<body>
+	<h1>extract</h1>
+		{% if error %}
+		<h2 style="color: red">{{ error }}</h2>
+		{% endif %}
+	<form method=POST enctype=multipart/form-data action="{{ url_for('extract') }}">
+		<h4>Image</h4>
+	    <input type=file name=photo><br>
+	    <h4>Password</h4>
+	    <input type="text" name=passwd><br><br>
+	    <input type="submit" value="Extract">
+	</form>
+</body>
+</html>
