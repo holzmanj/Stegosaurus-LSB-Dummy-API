@@ -7,7 +7,7 @@ import time
 
 app = Flask(__name__)
 
-app.secret_key = 'blah blah blah'
+app.secret_key = os.urandom(16)
 
 photoset = UploadSet('photos', IMAGES)
 fileset  = UploadSet('files', ALL)
