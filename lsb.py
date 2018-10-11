@@ -71,7 +71,10 @@ def parse_header(h_bytes):
 	f_hash = b''.join(f_hash)
 
 	f_name = h_bytes[20:]
-	f_name = [bits_to_byte(bits).decode() for bits in f_name]
+	try:
+		f_name = [bits_to_byte(bits).decode() for bits in f_name]
+	except:
+		raise Exception("Invalid header data. File name could not be parsed.")
 	f_name = "".join(f_name)
 
 	return size, f_hash, f_name.strip()

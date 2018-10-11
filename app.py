@@ -88,10 +88,10 @@ def extract():
                 error = "No image selected."
             else:
                 image_fname = os.path.join(img_dir, photoset.save(request.files["photo"]))
+                file_out = None
                 try:
                     file_out = lsb.extract(image_fname, files_dir)
                     os.remove(image_fname)
-                    print(file_out)
                     return send_file(file_out, as_attachment=True, 
                         attachment_filename=os.path.basename(file_out))
                 except Exception as e:
@@ -99,6 +99,7 @@ def extract():
                     error = e
                     if os.path.isfile(image_fname):
                         os.remove(image_fname)
-                    if file_out is not None and os.path.isfile(file_out):
-                        os.remove(file_out)
+                    if file_out is not None:
+                        if os.path.isfile(file_out):
+                            os.remove(file_out)
     return render_template("extract.html", error=error)
