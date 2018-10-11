@@ -10,6 +10,7 @@
 	<form method=POST enctype=multipart/form-data action="{{ url_for('get_capacity') }}">
 	    <h4>Image</h4>
 	    <input type=file name=photo><br><br>
+	    <input type="checkbox" name=formatted value="true" checked> Format capacity<br><br>
 	    <input type="submit" value="Upload Image">
 	</form>
 </body>

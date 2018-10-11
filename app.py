@@ -47,7 +47,10 @@ def get_capacity():
                     os.remove(file_name)
                 else:
                     cap = lsb.get_capacity(img)
-                    msg = "Capacity: %s" % lsb.format_capacity(cap)
+                    if request.form.get("formatted") == "true":
+                        msg = lsb.format_capacity(cap)
+                    else:
+                        msg = str(cap)
                     os.remove(file_name)
                     return msg
         else:
