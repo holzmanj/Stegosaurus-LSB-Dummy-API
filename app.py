@@ -32,6 +32,13 @@ def write_error_log(e):
 def home_page():
     return render_template("home.html")
 
+@app.route("/test", methods=["GET", "POST"])
+def call_test():
+    if request.method == "GET":
+        return "Send a string"
+    else:
+        return "This is what you sent: %s" % request.data 
+
 @app.route("/get_capacity", methods=["GET", "POST"])
 def get_capacity():
     error = None
