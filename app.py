@@ -74,27 +74,26 @@ class Insert(Resource):
             os.remove(file_name)
             return str(e), 400
 
-# @app.route("/extract", methods=["GET", "POST"])
-# def extract():
-#     error = None
-#     if request.method == "POST":
-#         if "photo" in request.files:
-#             if request.files["photo"].filename == "":
-#                 error = "No image selected."
-#             else:
-#                 image_fname = os.path.join(img_dir, photoset.save(request.files["photo"]))
-#                 file_out = None
-#                 try:
-#                     file_out = lsb.extract(image_fname, files_dir)
-#                     os.remove(image_fname)
-#                     return send_file(file_out, as_attachment=True, 
-#                         attachment_filename=os.path.basename(file_out))
-#                 except Exception as e:
-#                     write_error_log(e)
-#                     error = e
-#                     if os.path.isfile(image_fname):
-#                         os.remove(image_fname)
-#                     if file_out is not None:
-#                         if os.path.isfile(file_out):
-#                             os.remove(file_out)
-#     return render_template("extract.html", error=error)
+@api.route("/extract")
+@api.doc(id="extract", description="Extract content from vessel image using secret key.")
+class Extract(Resource):
+    @api.expect(parsers.extract)
+    def post(self):
+        args = parsers.extract.parse_args()
+        try:
+            image_fname = os.path.join(img_dir, photoset.save(args["image"]))
+        except:
+            return "File uploaded for vessel image is not an image.", 422
+        file_out = None
+        try:
+            file_out = lsb.extract(image_fname, files_dir)
+            os.remove(image_fname)
+            return send_file(file_out, as_attachment=True, 
+                attachment_filename=os.path.basename(file_out))
+        except Exception as e:
+            if os.path.isfile(image_fname):
+                os.remove(image_fname)
+            if file_out is not None:
+                if os.path.isfile(file_out):
+                    os.remove(file_out)
+            return str(e), 400

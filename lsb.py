@@ -74,7 +74,7 @@ def parse_header(h_bytes):
 	try:
 		f_name = [bits_to_byte(bits).decode() for bits in f_name]
 	except:
-		raise Exception("Invalid header data. File name could not be parsed.")
+		raise Exception("No content found in image. (File name could not be parsed.)")
 	f_name = "".join(f_name)
 
 	return size, f_hash, f_name.strip()
@@ -152,7 +152,7 @@ def extract(img_path, file_dir):
 				filesize, header_hash, out_file_name = parse_header(header_bytes)
 				output_path = os.path.join(file_dir, out_file_name)
 				if filesize > get_capacity(img):
-					raise Exception("Invalid header data. File size exceeds image capacity.")
+					raise Exception("No content found in image. (Parsed file size exceeds image capacity.)")
 				file = open(output_path, "wb")
 		else:
 			byte = bits_to_byte(byte)
@@ -167,6 +167,6 @@ def extract(img_path, file_dir):
 	file_hash = hashlib.md5(file.read()).digest()
 	file.close()
 	if file_hash != header_hash:
-		raise Exception("No file. Data retreived from image does not match the hash included.")
+		raise Exception("Content retreived from image does not match the hash included.")
 
 	return output_path
