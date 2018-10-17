@@ -39,11 +39,12 @@ class GetCapacity(Resource):
         args = parsers.get_capacity.parse_args()
         try:
             file_name = os.path.join(img_dir, photoset.save(args["image"]))
-            img = cv2.imread(file_name, cv2.IMREAD_COLOR)
         except Exception:
-            return "Upload failed! Make sure the file you upload is an image."
+            return "File uploaded was not an image.", 422
+        img = cv2.imread(file_name, cv2.IMREAD_COLOR)
+        if img == None:
+            return "Unable to read file.", 422
         cap = lsb.get_capacity(img)
-        print(args)
         if args["formatted"] == True:
             msg = lsb.format_capacity(cap)
         else:
@@ -51,56 +52,27 @@ class GetCapacity(Resource):
         os.remove(file_name)
         return msg
 
-
-# @app.route("/get_capacity", methods=["GET", "POST"])
-# def get_capacity():
-#     error = None
-#     if request.method == "POST":
-#         if "photo" in request.files:
-#             if request.files["photo"].filename == "":
-#                 error = "No photo selected."
-#             else:
-#                 file_name = os.path.join(img_dir, photoset.save(request.files["photo"]))
-#                 img = cv2.imread(file_name, cv2.IMREAD_COLOR)
-#                 if img is None:
-#                     error = "Image could not be read."
-#                     os.remove(file_name)
-#                 else:
-#                     cap = lsb.get_capacity(img)
-#                     if request.form.get("formatted") == "true":
-#                         msg = lsb.format_capacity(cap)
-#                     else:
-#                         msg = str(cap)
-#                     os.remove(file_name)
-#                     return msg
-#         else:
-#             error = "Missing image in request."
-#     return render_template("capacity.html", error=error)
-
-# @app.route("/insert", methods=["GET", "POST"])
-# def insert():
-#     error = None
-#     if request.method == "POST":
-#         if "photo" in request.files and "file" in request.files:
-#             if request.files["photo"].filename == "" or request.files["file"].filename == "":
-#                 error = "No image and/or file selected."
-#             else:
-#                 image_fname = os.path.join(img_dir, photoset.save(request.files["photo"]))
-#                 file_name = os.path.join(files_dir, fileset.save(request.files["file"]))
-#                 output_fname = os.path.join(img_dir, "%d.png" % int(time.time() * 1000))
-#                 try:
-#                     lsb.insert(image_fname, output_fname, file_name)
-#                     os.remove(image_fname)
-#                     os.remove(file_name)
-#                     return send_file(output_fname, as_attachment=True, mimetype="image/png")
-#                 except Exception as e:
-#                     write_error_log(e)
-#                     error = e
-#                     os.remove(image_fname)
-#                     os.remove(file_name)
-#         else:
-#             error = "Missing image and/or file in request"
-#     return render_template("insert.html", error=error)
+@api.route("/insert")
+@api.doc(id="insert", description="Insert content into vessel image using secret key.")
+class Insert(Resource):
+    @api.expect(parsers.insert)
+    def post(self):
+        args = parsers.insert.parse_args()
+        try:
+            image_fname = os.path.join(img_dir, photoset.save(args["image"]))
+        except:
+            return "File uploaded for vessel image is not an image.", 422
+        file_name = os.path.join(files_dir, fileset.save(args["content"]))
+        output_fname = os.path.join(img_dir, "%d.png" % int(time.time() * 1000))
+        try:
+            lsb.insert(image_fname, output_fname, file_name)
+            os.remove(image_fname)
+            os.remove(file_name)
+            return send_file(output_fname, as_attachment=True, mimetype="image/png")
+        except Exception as e:
+            os.remove(image_fname)
+            os.remove(file_name)
+            return str(e), 400
 
 # @app.route("/extract", methods=["GET", "POST"])
 # def extract():
