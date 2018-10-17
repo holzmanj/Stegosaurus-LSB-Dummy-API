@@ -42,7 +42,7 @@ class GetCapacity(Resource):
         except Exception:
             return "File uploaded was not an image.", 422
         img = cv2.imread(file_name, cv2.IMREAD_COLOR)
-        if img == None:
+        if img is None:
             return "Unable to read file.", 422
         cap = lsb.get_capacity(img)
         if args["formatted"] == True:
