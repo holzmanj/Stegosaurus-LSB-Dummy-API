@@ -31,6 +31,18 @@ configure_uploads(app, fileset)
 def home_page():
     return render_template("home.html")
 
+@api.route("/test")
+@api.doc(id="test", description="Just for testing basic connection to API without dealing with form data or anything.")
+class Test(Resource):
+    def get(self):
+        return "It worked!"
+    
+    @api.expect(parsers.test)
+    def post(self):
+        args = parsers.test.parse_args()
+        msg = args["message"]
+        return "The message you sent was: %s" % msg
+
 @api.route("/get_capacity")
 @api.doc(id="get_capacity", description="Get the amount of embeddable bytes in an image.")
 class GetCapacity(Resource):
