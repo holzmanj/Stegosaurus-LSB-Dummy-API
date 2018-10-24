@@ -31,6 +31,15 @@ configure_uploads(app, fileset)
 def home_page():
     return render_template("home.html")
 
+@app.route("/img/<filename>")
+def get_image(filename):
+    filepath = os.path.join(img_dir, filename)
+    if os.path.isfile(filepath):
+        return send_file(filepath, mimetype="image/png")
+    else:
+        return "Image not found.", 404
+
+
 @api.route("/test")
 @api.doc(id="test", description="Just for testing basic connection to API without dealing with form data or anything.")
 class Test(Resource):
@@ -75,12 +84,13 @@ class Insert(Resource):
         except:
             return "File uploaded for vessel image is not an image.", 422
         file_name = os.path.join(files_dir, fileset.save(args["content"]))
-        output_fname = os.path.join(img_dir, "%d.png" % int(time.time() * 1000))
+        output_fname = "%d.png" % int(time.time() * 1000)
+        output_fpath = os.path.join(img_dir, output_fname)
         try:
-            lsb.insert(image_fname, output_fname, file_name)
+            lsb.insert(image_fname, output_fpath, file_name)
             os.remove(image_fname)
             os.remove(file_name)
-            return send_file(output_fname, as_attachment=True, mimetype="image/png")
+            return request.url_root + "img/" + output_fname
         except Exception as e:
             os.remove(image_fname)
             os.remove(file_name)
