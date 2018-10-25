@@ -1,6 +1,8 @@
 from flask import Flask, send_file, render_template, request, Blueprint
 from flask_uploads import UploadSet, configure_uploads, IMAGES, ALL
 from flask_restplus import Resource, Api
+import requests
+import hashlib
 import werkzeug
 import lsb
 import cv2
@@ -102,10 +104,30 @@ class Extract(Resource):
     @api.expect(parsers.extract)
     def post(self):
         args = parsers.extract.parse_args()
-        try:
-            image_fname = os.path.join(img_dir, photoset.save(args["image"]))
-        except:
-            return "File uploaded for vessel image is not an image.", 422
+
+        # get image from url
+        if args["image_url"] is not None and args["image_url"] != "":
+            r = requests.get(args["image_url"])
+            if r.status_code != 200:
+                return "Could not get data from link provided", 400
+            ctype = r.headers["content-type"].split("/")
+            if ctype[0] != "image":
+                return "Data recieved from url was not an image. Content-type: %s" % r.headers["content-type"], 400
+            image_fname = hashlib.md5(r.content).hexdigest() + "." + ctype[1]
+            image_fname = os.path.join(img_dir, image_fname)
+
+            with open(image_fname, "wb") as f:
+                f.write(r.content)
+
+        # get image from request form data
+        elif args["image"] is not None:
+            try:
+                image_fname = os.path.join(img_dir, photoset.save(args["image"]))
+            except:
+                return "File uploaded for vessel image is not an image.", 422
+        else:
+            return "Must include either image, or image_url in request.", 400
+
         file_out = None
         try:
             file_out = lsb.extract(image_fname, files_dir)

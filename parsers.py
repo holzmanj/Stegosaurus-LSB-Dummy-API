@@ -14,5 +14,6 @@ insert.add_argument("content", type=FileStorage, location="files", required=True
 insert.add_argument("key", type=str, required=True)
 
 extract = reqparse.RequestParser()
-extract.add_argument("image", type=FileStorage, location="files", required=True)
+extract.add_argument("image", type=FileStorage, location="files", required=False)
+extract.add_argument("image_url", type=str, required=False)
 extract.add_argument("key", type=str, required=True)
