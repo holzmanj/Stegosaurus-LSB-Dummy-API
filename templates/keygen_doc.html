@@ -37,9 +37,8 @@
 				<li>Content file</li>
 				<li>Password</li>
 			</ol>
-			(After the vessel image is selected, it would probably be good to call the
-			<a href="https://stegosaurus.ml/api/">get_capacity</a>
-			API function and display that data somehow so that the user knows how much they can fit in their image.)
+			(After the vessel image is selected, it would probably be good to call the get_capacity	API function and display that
+			data somehow so that the user knows how much they can fit in their image.)
 			<br><br>
 			Once all of the inputs are set and the user clicks the button to insert, the client and server keys should be generated with this schema:
 			<br>
@@ -48,7 +47,8 @@
 			</center>
 			<ol>
 				<li>The password is hashed with SHA-256 to generate the preliminary hash (should be stored as a hex digest string)</li>
-				<li>The preliminary hash is split down the middle into two strings.  A 256-bit hex string should have 64 characters, so you should have two strings of 32 characters.</li>
+				<li>The preliminary hash is split down the middle into two strings.
+					A 256-bit hex string should have 64 characters, so you should have two strings of 32 characters.</li>
 				<li>The original password and the first half of the hash are concatenated together and hashed to produce the server-side key.</li>
 				<li>The original password and the second half of the hash are concatenated together and hashed to produce the client-side key.</li>
 			</ol>
@@ -68,6 +68,27 @@
 			</ol>
 			After all this is done, send the vessel image, server key, and encrypted content to the insert API fuction.
 			Upon success you will get a response with a link to an image on the website.  This image will have the encrypted content file embedded inside.
+		</div>
+		<hr>
+		<div>
+			<h3>Extraction</h3>
+			For extraction the app should only take two inputs:
+			<ol>
+				<li>Vessel image (with file embedded in it)</li>
+				<li>Password</li>
+			</ol>
+			Once the image and password are set and the user clicks the button to extract, the server and client keys should be generated with
+			the same schema as the insertion process.  Save the client key and just send the image and the server key to the extract API function.
+			If successful you should get back an encrypted file which should be decrypted using this schema:
+			<br>
+			<center>
+				<img src="{{ url_for('static', filename='docs/decrypt_scheme.png') }}">
+			</center>
+			<ol>
+				<li>The first 16 bytes of the encrypted file should be split from the rest of the file data and used as the IV</li>
+				<li>Use the IV and the client key to decrypt the content file (again using AES in CBC mode).</li>
+			</ol>
+			And then you're done!!!!!!!!!!!!!!!!!!!!
 		</div>
 	</body>
 </html>
