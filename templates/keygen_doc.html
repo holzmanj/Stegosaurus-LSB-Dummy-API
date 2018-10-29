@@ -1,0 +1,73 @@
+<html>
+	<head>
+		<title>Client-side Key Generation and Encryption</title>
+		<link href="https://fonts.googleapis.com/css?family=Niramit" rel="stylesheet">
+		<style>
+			body {
+				font-family: "Niramit", sans-serif;
+			}
+			img {
+				margin: 10px;
+				
+			}
+			hr {
+				 border: 0;
+				 height: 0;
+				 border-top: 1px solid rgba(0, 0, 0, 0.1);
+				 border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+			}
+		</style>
+	</head>
+	<body>
+		<h2>Client-side Key Generation and Encryption</h2>
+		<div>
+			<h3>Requirements</h3>
+			You will need to import a library (or libraries) that includes the algorithms:
+			<ul>
+				<li>SHA-256</li>
+				<li>AES with CBC mode.</li>
+			</ul>
+		</div>
+		<hr>
+		<div>
+			<h3>Insertion</h3>
+			The app should take three user input fields for the insertion process:
+			<ol>
+				<li>Vessel image</li>
+				<li>Content file</li>
+				<li>Password</li>
+			</ol>
+			(After the vessel image is selected, it would probably be good to call the
+			<a href="https://stegosaurus.ml/api/">get_capacity</a>
+			API function and display that data somehow so that the user knows how much they can fit in their image.)
+			<br><br>
+			Once all of the inputs are set and the user clicks the button to insert, the client and server keys should be generated with this schema:
+			<br>
+			<center>
+				<img src="{{ url_for('static', filename='docs/keygen_scheme.png') }}">
+			</center>
+			<ol>
+				<li>The password is hashed with SHA-256 to generate the preliminary hash (should be stored as a hex digest string)</li>
+				<li>The preliminary hash is split down the middle into two strings.  A 256-bit hex string should have 64 characters, so you should have two strings of 32 characters.</li>
+				<li>The original password and the first half of the hash are concatenated together and hashed to produce the server-side key.</li>
+				<li>The original password and the second half of the hash are concatenated together and hashed to produce the client-side key.</li>
+			</ol>
+			Once you have implemented the function to generate these keys, you can go
+			<a href="/docs/password_tester">here</a> to test passwords and see the output keys.
+			Make sure the keys that show up in the password tester match the ones that are produced by your implementation.
+			<br>
+			Once both keys are generated, the content file should be encrypted with this schema:
+			<br>
+			<center>
+				<img src="{{ url_for('static', filename='docs/encrypt_scheme.png') }}">
+			</center>
+			<ol>
+				<li>With a random number generator of your choice (a secure one is probably best) generate a 16-byte sequence for your initialization vector</li>
+				<li>Using the client key and IV, encrypt the content file with AES in cipher block chaining (CBC) mode.</li>
+				<li>Prepend the 16 IV bytes to the encrypted content file so that they are the first 16 bytes of the file</li>
+			</ol>
+			After all this is done, send the vessel image, server key, and encrypted content to the insert API fuction.
+			Upon success you will get a response with a link to an image on the website.  This image will have the encrypted content file embedded inside.
+		</div>
+	</body>
+</html>

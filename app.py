@@ -10,6 +10,7 @@ import os
 import time
 import traceback
 import parsers
+from key_generator import generate_keys
 
 app = Flask(__name__)
 blueprint = Blueprint('api', __name__, url_prefix='/api')
@@ -41,6 +42,24 @@ def get_image(filename):
     else:
         return "Image not found.", 404
 
+@app.route("/docs/keygen")
+def docs_keygen():
+    return render_template("keygen_doc.html")
+
+@app.route("/docs/password_tester", methods=["GET", "POST"])
+def password_tester():
+    if request.method == "POST" and request.form["password"] is not None:
+        key_dict = generate_keys(request.form["password"])
+        return render_template("keygen_tester.html", password = request.form["password"],
+                prelim = key_dict["prelim"], server_input = key_dict["server_input"],
+                server_key = key_dict["server_key"], client_input = key_dict["client_input"],
+                client_key = key_dict["client_key"])
+    return render_template("keygen_tester.html")
+
+# ╔═╗╔═╗╦  ╔═╗╦ ╦╔╗╔╔═╗╔╦╗╦╔═╗╔╗╔╔═╗
+# ╠═╣╠═╝║  ╠╣ ║ ║║║║║   ║ ║║ ║║║║╚═╗
+# ╩ ╩╩  ╩  ╚  ╚═╝╝╚╝╚═╝ ╩ ╩╚═╝╝╚╝╚═╝
+# Everything documented in the Swagger page at /api
 
 @api.route("/test")
 @api.doc(id="test", description="Just for testing basic connection to API without dealing with form data or anything.")
