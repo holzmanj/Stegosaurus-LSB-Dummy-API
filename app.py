@@ -3,6 +3,7 @@ from flask_uploads import UploadSet, configure_uploads, IMAGES, ALL
 from flask_restplus import Resource, Api
 import requests
 import hashlib
+import logging
 import werkzeug
 import lsb
 import cv2
@@ -10,6 +11,7 @@ import os
 import time
 import traceback
 import parsers
+import time
 from key_generator import generate_keys
 
 app = Flask(__name__)
@@ -82,9 +84,11 @@ class GetCapacity(Resource):
         try:
             file_name = os.path.join(img_dir, photoset.save(args["image"]))
         except Exception:
+            app.logger.error("Client uploaded a file that was not an image.")
             return "File uploaded was not an image.", 422
         img = cv2.imread(file_name, cv2.IMREAD_COLOR)
         if img is None:
+            app.logger.error("Image sent by client could not be read.")
             return "Unable to read file.", 422
         cap = lsb.get_capacity(img)
         if args["formatted"] == True:
@@ -103,18 +107,24 @@ class Insert(Resource):
         try:
             image_fname = os.path.join(img_dir, photoset.save(args["image"]))
         except:
+            app.logger.error("Client sent a file for insertion that is not an image.")
             return "File uploaded for vessel image is not an image.", 422
         file_name = os.path.join(files_dir, fileset.save(args["content"]))
         output_fname = "%d.png" % int(time.time() * 1000)
         output_fpath = os.path.join(img_dir, output_fname)
         try:
+            app.logger.info("Calling LSB insert for %s image." % lsb.format_capacity(os.stat(image_fname).st_size))
+            time_0 = time.time()
             lsb.insert(image_fname, output_fpath, file_name)
+            time_diff = time.time() - time_0
+            app.logger.info("LSB insert finished. Seconds elapsed: %s" % time_diff)
             os.remove(image_fname)
             os.remove(file_name)
             return request.url_root + "img/" + output_fname
         except Exception as e:
             os.remove(image_fname)
             os.remove(file_name)
+            app.logger.error(e)
             return str(e), 400
 
 @api.route("/extract")
@@ -128,9 +138,11 @@ class Extract(Resource):
         if args["image_url"] is not None and args["image_url"] != "":
             r = requests.get(args["image_url"])
             if r.status_code != 200:
+                app.logger.error("Client sent a link that no data could be downloaded from.")
                 return "Could not get data from link provided", 400
             ctype = r.headers["content-type"].split("/")
             if ctype[0] != "image":
+                app.logger.error("Client sent a link to something that is not an image.")
                 return "Data recieved from url was not an image. Content-type: %s" % r.headers["content-type"], 400
             image_fname = hashlib.md5(r.content).hexdigest() + "." + ctype[1]
             image_fname = os.path.join(img_dir, image_fname)
@@ -143,13 +155,19 @@ class Extract(Resource):
             try:
                 image_fname = os.path.join(img_dir, photoset.save(args["image"]))
             except:
+                app.logger.error("Client uploaded a file for extraction that was not an image.")
                 return "File uploaded for vessel image is not an image.", 422
         else:
+            app.logger.error("Client called extract without including either an image or image URL.")
             return "Must include either image, or image_url in request.", 400
 
         file_out = None
         try:
+            app.logger.info("Calling LSB extract for %s image." % lsb.format_capacity(os.stat(image_fname).st_size))
+            time_0 = time.time()
             file_out = lsb.extract(image_fname, files_dir)
+            time_diff = time.time() - time_0
+            app.logger.info("LSB extract finished. Seconds elapsed: %s" % time_diff)
             os.remove(image_fname)
             return send_file(file_out, as_attachment=True, 
                 attachment_filename=os.path.basename(file_out))
