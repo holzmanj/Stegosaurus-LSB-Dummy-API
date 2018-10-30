@@ -3,7 +3,6 @@ from flask_uploads import UploadSet, configure_uploads, IMAGES, ALL
 from flask_restplus import Resource, Api
 import requests
 import hashlib
-import logging
 import werkzeug
 import lsb
 import cv2
@@ -43,6 +42,12 @@ def get_image(filename):
         return send_file(filepath, mimetype="image/png")
     else:
         return "Image not found.", 404
+
+@app.route("/api_log")
+def api_log():
+    with open("app.log", "r") as log:
+        log_str = log.read()
+        return render_template("log.html", log_text = log_str)
 
 @app.route("/docs/keygen")
 def docs_keygen():
@@ -104,6 +109,7 @@ class Insert(Resource):
     @api.expect(parsers.insert)
     def post(self):
         args = parsers.insert.parse_args()
+        time_0 = time.time()
         try:
             image_fname = os.path.join(img_dir, photoset.save(args["image"]))
         except:
@@ -114,12 +120,14 @@ class Insert(Resource):
         output_fpath = os.path.join(img_dir, output_fname)
         try:
             app.logger.info("Calling LSB insert for %s image." % lsb.format_capacity(os.stat(image_fname).st_size))
-            time_0 = time.time()
+            lsb_time_0 = time.time()
             lsb.insert(image_fname, output_fpath, file_name)
-            time_diff = time.time() - time_0
-            app.logger.info("LSB insert finished. Seconds elapsed: %s" % time_diff)
+            lsb_time_diff = time.time() - lsb_time_0
+            app.logger.info("LSB insert finished. Seconds elapsed: %s" % lsb_time_diff)
             os.remove(image_fname)
             os.remove(file_name)
+            time_diff = time.time() - time_0
+            app.logger.info("Seconds elapsed handling insert request: %s" % time_diff)
             return request.url_root + "img/" + output_fname
         except Exception as e:
             os.remove(image_fname)
@@ -133,19 +141,24 @@ class Extract(Resource):
     @api.expect(parsers.extract)
     def post(self):
         args = parsers.extract.parse_args()
-
+        time_0 = time.time()
         # get image from url
         if args["image_url"] is not None and args["image_url"] != "":
+            app.logger.info("Downloading image from url: %s" % args["image_url"])
+            url_time_0 = time.time()
             r = requests.get(args["image_url"])
+            url_time_diff = time.time() - url_time_0
             if r.status_code != 200:
                 app.logger.error("Client sent a link that no data could be downloaded from.")
                 return "Could not get data from link provided", 400
             ctype = r.headers["content-type"].split("/")
             if ctype[0] != "image":
-                app.logger.error("Client sent a link to something that is not an image.")
+                app.logger.error("Client sent a link to something that is not an image. Content-type: %s" % r.headers["content-type"])
                 return "Data recieved from url was not an image. Content-type: %s" % r.headers["content-type"], 400
             image_fname = hashlib.md5(r.content).hexdigest() + "." + ctype[1]
             image_fname = os.path.join(img_dir, image_fname)
+
+            app.logger.info("Seconds elapsed getting image from URL: %s" % url_time_diff)
 
             with open(image_fname, "wb") as f:
                 f.write(r.content)
@@ -164,13 +177,14 @@ class Extract(Resource):
         file_out = None
         try:
             app.logger.info("Calling LSB extract for %s image." % lsb.format_capacity(os.stat(image_fname).st_size))
-            time_0 = time.time()
+            lsb_time_0 = time.time()
             file_out = lsb.extract(image_fname, files_dir)
-            time_diff = time.time() - time_0
-            app.logger.info("LSB extract finished. Seconds elapsed: %s" % time_diff)
+            lsb_time_diff = time.time() - lsb_time_0
+            app.logger.info("LSB extract finished. Seconds elapsed: %s" % lsb_time_diff)
             os.remove(image_fname)
-            return send_file(file_out, as_attachment=True, 
-                attachment_filename=os.path.basename(file_out))
+            time_diff = time.time() - time_0
+            app.logger.info("Seconds elapsed handling extract request: %s" % time_diff)
+            return send_file(file_out, as_attachment=True, attachment_filename=os.path.basename(file_out))
         except Exception as e:
             if os.path.isfile(image_fname):
                 os.remove(image_fname)
