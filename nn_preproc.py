@@ -182,9 +182,43 @@ def batches_to_image(batches, img):
             if batch_no >= n:
                 return img_out
 
+###############################################################
+#                                                             #
+#   These will be the functions that are called from the API  #
+#   Right now they're still missing some code (marked in the  #
+#   functions with comments) but everything else works        #
+#                                                             #
+###############################################################
+
 def insert(img_path, file_path):
+    """
+    Inserts the file at file_path into the image at img_path using the neural network.
+    Returns the image as an opencv numpy array.  Can be saved with: cv2.imwrite(path, image)
+    """
+    img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+    img_batches = img_to_batches(img)
+    file_batches = file_to_batches(file_path)
+
+    batches_out = None
+    #
+    #   GIVE BATCHES TO NEURAL NETWORK HERE
+    #   batches_out = Alice.insert(img_batches, file_batches)
+    #
+    img_out = batches_to_image(batches_out, img)
+    return img_out
+
+def extract(img_path, output_dir):
+    """
+    Extracts a content file from the image at img_path using the neural network.
+    On success the file is saved to output_dir (file name comes from header).
+    """
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
     img_batches = img_to_batches(img)
 
-    img_out = None # neuralnetwork.insert(img_batches, file_batches)
+    batches_out = None
+    #
+    #   GIVE BATCHES TO NEURAL NETWORK HERE
+    #   batches_out = Bob.extract(img_batches)
+    #
+    batches_to_file(batches_out, output_dir)
     
