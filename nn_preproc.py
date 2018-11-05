@@ -5,6 +5,13 @@ import math
 import os
 
 def generate_header(file_path):
+    """
+    Creates header data (size, hash, and name) for a specific file.
+    4 bytes for size is more or less arbitrary. If we ever need to embed anything >4GB it can be changed.
+    16 bytes is the constant length of an MD5 digest.
+    Filenames are padded 255 bytes because that is the max length for a filename in a lot of file systems.
+    Altogether it adds up to 275 bytes, which is padded to 384 so it can occupy 3 reserved batches/blocks.
+    """
     # 4 bytes for filesize
     filesize = os.path.getsize(file_path)
     if filesize >= 2**32:
@@ -23,6 +30,10 @@ def generate_header(file_path):
     return header_bytes
 
 def parse_header(header_bytes):
+    """
+    Extracts a file's size, hash, and name from a byte string of header data (expecting at least 275 bytes).
+    If anything is added or changed in the generate_header function that must be reflected here.
+    """
     size = header_bytes[:4]
     size = int.from_bytes(size, byteorder="big")
 
@@ -38,6 +49,10 @@ def parse_header(header_bytes):
     return size, f_hash, f_name.strip()
 
 def bytes_to_batch(byte_str):
+    """
+    Converts exactly 128 bytes to a 32x32x1 numpy array to be used as a batch for the neural network.
+    Bytes are expanded into bits and converted to {-1.0, 1.0} in place of {0, 1}.
+    """
     if len(byte_str) != 128:
         raise Exception("bytes_to_batch takes exactly 128 bytes (got %d)" % len(byte_str))
 
@@ -59,6 +74,10 @@ def bytes_to_batch(byte_str):
     return batch
 
 def batch_to_bytes(batch):
+    """
+    The inverse of the bytes_to_batch function.  A 32x32x1 numpy array with values {-1.0, 1.0} is converted
+    into a string of 128 bytes.
+    """
     if batch.shape != (32, 32, 1):
         raise Exception("Got batch with invalid shape: %s" % str(batch.shape))
 
