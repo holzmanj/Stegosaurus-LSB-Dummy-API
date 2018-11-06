@@ -1,4 +1,5 @@
 __pycache__/
 static/img/*
 static/files/*
-error.log
+app.log
+*.pyc

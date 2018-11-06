@@ -1,0 +1,37 @@
+<html>
+	<head>
+		<title>Password Tester</title>
+		<link href="https://fonts.googleapis.com/css?family=Niramit" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet"> 
+		<style>
+			body {
+				font-family: "Niramit", sans-serif;
+			}
+			.code {
+				font-family: "Source Code Pro", monospace;
+			}
+		</style>
+	</head>
+	<body>
+		<h2>Password Tester</h2>
+		<form method=POST action={{ url_for("password_tester") }}>
+			<h4>Enter password:</h4>
+			<input type="text" name="password">
+			<input type="submit" value="Generate keys">
+		</form>
+		<div>
+			<h4>Preliminary hash</h4>
+			<div class="code">
+				{{ password }} ==&gt; {{ prelim }}
+			</div>
+			<h4>Server key</h4>
+			<div class="code">
+				{{ server_input }} ==&gt; {{ server_key }}
+			</div>
+			<h4>Client key</h4>
+			<div class="code">
+				{{ client_input }} ==&gt; {{ client_key }}
+			</div>
+		</div>
+	</body>
+</html>

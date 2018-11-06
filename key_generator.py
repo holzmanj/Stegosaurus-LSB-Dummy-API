@@ -1,15 +1,25 @@
 from hashlib import sha256
+import sys
 
 def generate_keys(passwd):
-	prelim_hash = sha256(passwd.encode())
-	print("prelim_hash:     %s" % prelim_hash.digest())
-	print("prelim_hash hex: %s" % prelim_hash.hexdigest())
-	client_key_input = passwd.encode() + prelim_hash.digest()[16:]
-	client_key = sha256(client_key_input)
-	print("client_key:     %s" % client_key.digest())
-	print("client_key hex: %s" % client_key.hexdigest())
-	server_key_input = passwd.encode() + prelim_hash.digest()[:16]
-	server_key = sha256(server_key_input)
-	print("server_key:     %s" % server_key.digest())
-	print("server_key hex: %s" % server_key.hexdigest())
+    prelim_hash = sha256(passwd.encode()).hexdigest()
+    #print("prelim_hash:\n%s ==> %s" % (passwd, prelim_hash))
+ 
+    client_key_input = passwd + prelim_hash[32:]
+    client_key = sha256(client_key_input.encode()).hexdigest()
+    #print("client_key:\n%s ==> %s" % (client_key_input, client_key))
+
+    server_key_input = passwd + prelim_hash[:32]
+    server_key = sha256(server_key_input.encode()).hexdigest()
+    #print("server_key:\n%s ==> %s" % (server_key_input, server_key))
+
+    output_dict = {
+        "prelim": prelim_hash,
+        "client_input": client_key_input,
+        "client_key": client_key,
+        "server_input": server_key_input,
+        "server_key": server_key
+    }
+
+    return output_dict
 
