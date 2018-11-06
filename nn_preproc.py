@@ -4,6 +4,8 @@ import hashlib
 import math
 import os
 
+FAIL_ON_BAD_HASH = True
+
 def generate_header(file_path):
     """
     Creates header data (size, hash, and name) for a specific file.
@@ -96,16 +98,21 @@ def batch_to_bytes(batch):
                 bits = ""
     return bytes(byte_vals)
 
-def file_to_batches(file_path):
+def file_to_batches(file_path, n=None):
     """
     Reads file from given path and converts it into nx32x32x1 batches for the neural network
     First three batches hold the header data (file name, file size, and hash).
+    If n is set, the batch set will be padded to n batches.
     """
     header_bytes = generate_header(file_path)
 
     filesize = os.path.getsize(file_path)
-    # 128 = number of bytes in 32x32 bitplane, 3 additional batches for header
-    n = math.ceil(filesize / 128) + 3
+    if n is None:
+        # 128 = number of bytes in 32x32 bitplane, 3 additional batches for header
+        n = math.ceil(filesize / 128) + 3
+    elif n < math.ceil(filesize / 128) + 3:
+        raise Exception("Value for n is too small. Batch set for %s would be %d batches long."
+                % (os.path.basename(file_path), math.ceil(filesize / 128) + 3))
     batches = np.zeros((n, 32, 32, 1))
 
     with open(file_path, "rb") as file:
@@ -113,7 +120,7 @@ def file_to_batches(file_path):
         for i in range(3):
             batches[i] = bytes_to_batch(header_bytes[128*i:128*(i+1)])
 
-        # convert image to batches
+        # convert file to batches
         for batch_no in range(3, n):
             buf = file.read(128)
 
@@ -149,7 +156,10 @@ def batches_to_file(batches, output_dir):
     # verify hash
     file_hash = hashlib.md5(file_bytes).digest()
     if file_hash != header_hash:
-        raise Exception("Content could not be retrieved from image. Hashes do not match.")
+        if FAIL_ON_BAD_HASH:
+            raise Exception("Content could not be retrieved from image. Hashes do not match.")
+        else:
+            print("Data was not retrieved successfully. Hash verification failed.")
 
     # save file
     output_path = os.path.join(output_dir, file_name)
@@ -216,7 +226,7 @@ def insert(img_path, file_path):
     """
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
     img_batches = img_to_batches(img)
-    file_batches = file_to_batches(file_path)
+    file_batches = file_to_batches(file_path, n=img_batches.size[0])
 
     batches_out = None
     #
