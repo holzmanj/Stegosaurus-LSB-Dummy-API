@@ -13,7 +13,7 @@ def nn_to_bin(batch):
 def get_capacity(img):
     h, w, _ = img.shape
     cap = (h * w) // 8
-    return cap
+    return cap - 384    # 3 reserved header batches = 384 bytes
 
 def format_capacity(bytes):
     units = ["B", "KB", "MB", "GB", "TB"]
@@ -241,6 +241,9 @@ def insert(cfg, sess, img_path, file_path, img_out_path):
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
     if img is None:
         raise Exception("Image could not be read.")
+
+    if get_capacity(img) < os.path.getsize(file_path):
+        raise Exception("Content file is too large to be inserted into image.")
 
     img_batches = image_to_batches(img)
     print(img_batches.shape)

@@ -19,7 +19,7 @@ import nn_preproc as nn
 
 app = Flask(__name__)
 blueprint = Blueprint('api', __name__, url_prefix='/api')
-api = Api(blueprint, title="SteGANographer API",
+api = Api(blueprint, title="Steganography API",
     description="Steganographic API for Stegosaurus using an early version of the neural network (no key support yet).")
 app.register_blueprint(blueprint)
 
