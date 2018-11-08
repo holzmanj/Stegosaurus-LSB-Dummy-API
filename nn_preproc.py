@@ -3,8 +3,28 @@ import numpy as np
 import hashlib
 import math
 import os
+import tensorflow as tf
 
 FAIL_ON_BAD_HASH = True
+
+def nn_to_bin(batch):
+    return np.around(batch).astype(int)
+
+def get_capacity(img):
+    h, w, _ = img.shape
+    cap = (h * w) // 8
+    return cap
+
+def format_capacity(bytes):
+    units = ["B", "KB", "MB", "GB", "TB"]
+    i = 0
+    while i < len(units):
+        if bytes < 1024:
+            break
+        else:
+            bytes /= 1024
+        i += 1
+    return "%.2f%s" % (bytes, units[i])
 
 def generate_header(file_path):
     """
@@ -165,6 +185,7 @@ def batches_to_file(batches, output_dir):
     output_path = os.path.join(output_dir, file_name)
     with open(output_path, "wb") as file_out:
         file_out.write(file_bytes)
+    return output_path
 
 def image_to_batches(img):
     """
@@ -211,43 +232,40 @@ def batches_to_image(batches, img):
             if batch_no >= n:
                 return img_out
 
-###############################################################
-#                                                             #
-#   These will be the functions that are called from the API  #
-#   Right now they're still missing some code (marked in the  #
-#   functions with comments) but everything else works        #
-#                                                             #
-###############################################################
 
-def insert(img_path, file_path):
+def insert(cfg, sess, img_path, file_path, img_out_path):
     """
     Inserts the file at file_path into the image at img_path using the neural network.
-    Returns the image as an opencv numpy array.  Can be saved with: cv2.imwrite(path, image)
+    Saves the resulting image to img_out_path
     """
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-    img_batches = img_to_batches(img)
-    file_batches = file_to_batches(file_path, n=img_batches.size[0])
+    if img is None:
+        raise Exception("Image could not be read.")
 
-    batches_out = None
-    #
-    #   GIVE BATCHES TO NEURAL NETWORK HERE
-    #   batches_out = Alice.insert(img_batches, file_batches)
-    #
+    img_batches = image_to_batches(img)
+    print(img_batches.shape)
+    file_batches = file_to_batches(file_path, n=img_batches.shape[0])
+
+    print(tf.shape(img_batches))
+    print(tf.shape(file_batches))
+
+    batches_out = sess.run('alice_out:0', feed_dict={
+        'img_in:0': img_batches, 'msg_in:0': file_batches})
+
     img_out = batches_to_image(batches_out, img)
-    return img_out
+    cv2.imwrite(img_out_path, img_out)
 
-def extract(img_path, output_dir):
+def extract(cfg, sess, img_path, output_dir):
     """
     Extracts a content file from the image at img_path using the neural network.
     On success the file is saved to output_dir (file name comes from header).
     """
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-    img_batches = img_to_batches(img)
+    img_batches = image_to_batches(img)
 
-    batches_out = None
-    #
-    #   GIVE BATCHES TO NEURAL NETWORK HERE
-    #   batches_out = Bob.extract(img_batches)
-    #
-    batches_to_file(batches_out, output_dir)
+    batches_out = sess.run('bob_vars_1/bob_eval_out:0',
+                           feed_dict={'img_in:0': img_batches})
+
+    return batches_to_file(batches_out, output_dir)
+
     
