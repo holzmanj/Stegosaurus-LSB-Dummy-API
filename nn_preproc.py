@@ -65,7 +65,6 @@ def parse_header(header_bytes):
     try:
         f_name = f_name.decode()
     except:
-        print(f_name)
         raise Exception("Content could not be retrieved from image. (File name could not be parsed.)")
 
     return size, f_hash, f_name.strip()
@@ -179,7 +178,7 @@ def batches_to_file(batches, output_dir):
         if FAIL_ON_BAD_HASH:
             raise Exception("Content could not be retrieved from image. Hashes do not match.")
         else:
-            print("Data was not retrieved successfully. Hash verification failed.")
+            app.logger.error("Data was not retrieved successfully. Hash verification failed.")
 
     # save file
     output_path = os.path.join(output_dir, file_name)
@@ -246,11 +245,7 @@ def insert(cfg, sess, img_path, file_path, img_out_path):
         raise Exception("Content file is too large to be inserted into image.")
 
     img_batches = image_to_batches(img)
-    print(img_batches.shape)
     file_batches = file_to_batches(file_path, n=img_batches.shape[0])
-
-    print(tf.shape(img_batches))
-    print(tf.shape(file_batches))
 
     batches_out = sess.run('alice_out:0', feed_dict={
         'img_in:0': img_batches, 'msg_in:0': file_batches})

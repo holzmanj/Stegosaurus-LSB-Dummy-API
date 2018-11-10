@@ -7,7 +7,6 @@ import werkzeug
 import cv2
 import os
 import time
-import traceback
 import parsers
 import time
 from key_generator import generate_keys
@@ -15,6 +14,7 @@ from key_generator import generate_keys
 import numpy as np
 import tensorflow as tf
 from neuralnet.src.config import Config
+import neuralnet.imgDiff as img_diff
 import nn_preproc as nn
 
 app = Flask(__name__)
@@ -45,7 +45,7 @@ root_dir = os.path.abspath("neuralnet")
 model_dir = os.path.join(root_dir, "models")
 model_dir = os.path.join(model_dir, cfg.MODEL_NAME)
 if not os.path.exists(model_dir):
-    print("Error: No model exists at %s" % model_dir)
+    app.logger.error("Error: No model exists at %s" % model_dir)
     exit()
 
 target_dir = os.path.join(root_dir, "production")
@@ -70,12 +70,12 @@ if os.path.isfile(log_file_name):
         lines = log_file.readlines()
         if len(lines) > 1:
             current_epoch = int(lines[-1].split(',')[0])
-            print("Current epoch: %d\n" % current_epoch)
+            app.logger.info("Current epoch: %d\n" % current_epoch)
         else:
-            print("Error: Cannot infer epoch from log file...")
+            app.logger.error("Error: Cannot infer epoch from log file...")
             exit()
 else:
-    print("Error: No log file from which to infer epoch")
+    app.logger.error("Error: No log file from which to infer epoch")
     exit()
 
 # Restore saved weights
@@ -103,11 +103,7 @@ def get_image(filename):
     else:
         return "Image not found.", 404
 
-@app.route("/api_log")
-def api_log():
-    with open("app.log", "r") as log:
-        log_str = log.read()
-        return render_template("log.html", log_text = log_str)
+# DOCUMENTATION
 
 @app.route("/docs/keygen")
 def docs_keygen():
@@ -122,6 +118,42 @@ def password_tester():
                 server_key = key_dict["server_key"], client_input = key_dict["client_input"],
                 client_key = key_dict["client_key"])
     return render_template("keygen_tester.html")
+
+# DEBUGGING
+
+@app.route("/debug")
+def debug_home():
+    return render_template("debug_home.html")
+
+@app.route("/debug/log")
+def debug_log():
+    with open("app.log", "r") as log:
+        log_str = log.read()
+        return render_template("log.html", log_text = log_str)
+
+@app.route("/debug/img_compare", methods=["GET", "POST"])
+def img_compare():
+    if request.method == "POST":
+        if "img1" in request.files and "img2" in request.files:
+            img_path1 = os.path.join(img_dir, photoset.save(request.files["img1"]))
+            img_path2 = os.path.join(img_dir, photoset.save(request.files["img2"]))
+            try:
+                image_fnames = img_diff.compare_images(img_path1, img_path2, img_dir)
+            except Exception as e:
+                os.remove(img_path1)
+                os.remove(img_path2)
+                return render_template("img_compare.html", error=e)
+            image_fnames = list(image_fnames)
+            for i in range(len(image_fnames)):
+                image_fnames[i] = request.url_root + "img/" + image_fnames[i]
+                os.remove(img_path1)
+                os.remove(img_path2)           
+                return render_template("img_compare.html", diff_img = image_fnames[0], r_img = image_fnames[1],
+                    g_img = image_fnames[2], b_img = image_fnames[3])
+        else:
+            return render_template("img_compare.html", error="Missing one or more images.")
+    return render_template("img_compare.html")
+    
 
 # ╔═╗╔═╗╦  ╔═╗╦ ╦╔╗╔╔═╗╔╦╗╦╔═╗╔╗╔╔═╗
 # ╠═╣╠═╝║  ╠╣ ║ ║║║║║   ║ ║║ ║║║║╚═╗
@@ -192,7 +224,6 @@ class Insert(Resource):
         except Exception as e:
             os.remove(image_fname)
             os.remove(file_name)
-            traceback.print_exc()
             app.logger.error(e)
             return str(e), 400
 

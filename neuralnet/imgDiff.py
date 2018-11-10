@@ -5,6 +5,7 @@ import os
 import cv2
 import numpy as np
 
+import time
 import datetime
 
 
@@ -19,6 +20,39 @@ def split_into_rgb_channels(image):
     blue = image[:, :, 0]
     return red, green, blue
 
+
+def compare_images(img_path1, img_path2, out_dir):
+    '''check that images exist'''
+    if os.path.exists(img_path1) and os.path.exists(img_path2):
+        img_1 = cv2.imread(img_path1, cv2.IMREAD_COLOR)
+        img_2 = cv2.imread(img_path2, cv2.IMREAD_COLOR)
+    else:
+        if not os.path.exists(img_path1):
+            raise Exception("Error: No image at %s" % img_path1)
+        if not os.path.exists(img_path2):
+            raise Exception("Error: No image at %s" % img_path2)
+
+    ms_time = int(time.time() * 1000)
+    # pre-generate all output paths so they can be returned
+    diff_fname  = "%d-diff.png" % ms_time
+    fnames = {
+          "red": "%d-red.png" % ms_time,
+         "blue": "%d-blue.png" % ms_time,
+        "green": "%d-green.png" % ms_time
+    }
+
+    difference_img = np.absolute(img_1 - img_2)
+    cv2.imwrite(os.path.join(out_dir, diff_fname), difference_img)
+
+    '''split difference image into red green and blue color channels'''
+    red, green, blue = split_into_rgb_channels(difference_img)
+    for values, color, channel in zip((red, green, blue), ('red', 'green', 'blue'), (2, 1, 0)):
+        difference_img = np.zeros(
+            (values.shape[0], values.shape[1], 3), dtype=values.dtype)
+        difference_img[:, :, channel] = values
+        cv2.imwrite(os.path.join(out_dir, fnames[color]), difference_img)
+    
+    return diff_fname, fnames["red"], fnames["green"], fnames["blue"]
 
 def main():
     '''temporary --- path for local testing'''
