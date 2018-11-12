@@ -247,8 +247,18 @@ def insert(cfg, sess, img_path, file_path, img_out_path):
     img_batches = image_to_batches(img)
     file_batches = file_to_batches(file_path, n=img_batches.shape[0])
 
-    batches_out = sess.run('alice_out:0', feed_dict={
-        'img_in:0': img_batches, 'msg_in:0': file_batches})
+    batches_out = img_batches.copy()
+    single_img_batch  = np.zeros((1, 32, 32, 3))
+    single_file_batch = np.zeros((1, 32, 32, 1))
+    single_batch_out  = np.zeros((1, 32, 32, 3))
+
+    for i in range(batches_out.shape[0]):
+        single_img_batch[0] = img_batches[i]
+        single_file_batch[0] = file_batches[i]
+        single_batch_out = sess.run('alice_out:0', feed_dict={
+            'img_in:0': single_img_batch,
+            'msg_in:0': single_file_batch })
+        batches_out[i] = single_batch_out[0]
 
     img_out = batches_to_image(batches_out, img)
     cv2.imwrite(img_out_path, img_out)
@@ -261,8 +271,16 @@ def extract(cfg, sess, img_path, output_dir):
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
     img_batches = image_to_batches(img)
 
-    batches_out = sess.run('bob_vars_1/bob_eval_out:0',
-                           feed_dict={'img_in:0': img_batches})
+    n = img_batches.shape[0]
+    batches_out = np.zeros((n, 32, 32, 1))
+    single_img_batch  = np.zeros((1, 32, 32, 3))
+    single_batch_out  = np.zeros((1, 32, 32, 1))
+
+    for i in range(n):
+        single_img_batch[0] = img_batches[i]
+        single_batch_out[0] = sess.run('bob_vars_1/bob_eval_out:0',
+            feed_dict={'img_in:0': single_img_batch})
+        batches_out[i] = single_batch_out[0]
 
     return batches_to_file(batches_out, output_dir)
 
