@@ -232,7 +232,7 @@ def batches_to_image(batches, img):
                 return img_out
 
 
-def insert(cfg, sess, img_path, file_path, img_out_path):
+def insert(cfg, sess, logger, img_path, file_path, img_out_path):
     """
     Inserts the file at file_path into the image at img_path using the neural network.
     Saves the resulting image to img_out_path
@@ -244,7 +244,9 @@ def insert(cfg, sess, img_path, file_path, img_out_path):
     if get_capacity(img) < os.path.getsize(file_path):
         raise Exception("Content file is too large to be inserted into image.")
 
+    logger.info("Converting image to batches.")
     img_batches = image_to_batches(img)
+    logger.info("Converting file to batches.")
     file_batches = file_to_batches(file_path, n=img_batches.shape[0])
 
     batches_out = img_batches.copy()
@@ -252,6 +254,7 @@ def insert(cfg, sess, img_path, file_path, img_out_path):
     single_file_batch = np.zeros((1, 32, 32, 1))
     single_batch_out  = np.zeros((1, 32, 32, 3))
 
+    logger.info("Sending batches to neural network for insertion.")
     for i in range(batches_out.shape[0]):
         single_img_batch[0] = img_batches[i]
         single_file_batch[0] = file_batches[i]
@@ -260,15 +263,17 @@ def insert(cfg, sess, img_path, file_path, img_out_path):
             'msg_in:0': single_file_batch })
         batches_out[i] = single_batch_out[0]
 
+    logger.info("Converting output batches into image.")
     img_out = batches_to_image(batches_out, img)
     cv2.imwrite(img_out_path, img_out)
 
-def extract(cfg, sess, img_path, output_dir):
+def extract(cfg, sess, logger, img_path, output_dir):
     """
     Extracts a content file from the image at img_path using the neural network.
     On success the file is saved to output_dir (file name comes from header).
     """
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+    logger.info("Converting image to batches.")
     img_batches = image_to_batches(img)
 
     n = img_batches.shape[0]
@@ -276,12 +281,14 @@ def extract(cfg, sess, img_path, output_dir):
     single_img_batch  = np.zeros((1, 32, 32, 3))
     single_batch_out  = np.zeros((1, 32, 32, 1))
 
+    logger.info("Sending batches to neural network for extraction.")
     for i in range(n):
         single_img_batch[0] = img_batches[i]
         single_batch_out[0] = sess.run('bob_vars_1/bob_eval_out:0',
             feed_dict={'img_in:0': single_img_batch})
         batches_out[i] = single_batch_out[0]
 
+    app.logger("Converting output batches into file.")
     return batches_to_file(batches_out, output_dir)
 
     
