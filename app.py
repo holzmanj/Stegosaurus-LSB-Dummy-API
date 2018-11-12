@@ -146,10 +146,10 @@ def img_compare():
             image_fnames = list(image_fnames)
             for i in range(len(image_fnames)):
                 image_fnames[i] = request.url_root + "img/" + image_fnames[i]
-                os.remove(img_path1)
-                os.remove(img_path2)           
-                return render_template("img_compare.html", diff_img = image_fnames[0], r_img = image_fnames[1],
-                    g_img = image_fnames[2], b_img = image_fnames[3])
+            os.remove(img_path1)
+            os.remove(img_path2)           
+            return render_template("img_compare.html", diff_img = image_fnames[0], r_img = image_fnames[1],
+                g_img = image_fnames[2], b_img = image_fnames[3])
         else:
             return render_template("img_compare.html", error="Missing one or more images.")
     return render_template("img_compare.html")
