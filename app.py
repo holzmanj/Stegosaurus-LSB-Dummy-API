@@ -211,9 +211,9 @@ class Insert(Resource):
         output_fname = "%d.png" % int(time.time() * 1000)
         output_fpath = os.path.join(img_dir, output_fname)
         try:
-            pix_h, pix_w = cv2.imread(file_name, cv2.IMREAD_COLOR).shape 
-            app.logger.info("Calling neural network insert for %dx%d image and %s file." %
-                    (pix_w, pix_h, nn.format_capacity(os.stat(image_fname).st_size)))
+            pix_h, pix_w, _ = cv2.imread(image_fname, cv2.IMREAD_COLOR).shape
+            app.logger.info("Calling neural network insert for %dx%d image and %s file." % (pix_w, pix_h, 
+                       nn.format_capacity(os.stat(image_fname).st_size)))
             nn_time_0 = time.time()
             nn.insert(cfg, sess, app.logger, image_fname, file_name, output_fpath)
             nn_time_diff = time.time() - nn_time_0
@@ -247,10 +247,10 @@ class Extract(Resource):
                 return "Could not get data from link provided", 400
             ctype = r.headers["content-type"].split("/")
             if ctype[0] != "image":
-                app.logger.error("Client sent a link to something that is not an image. Content-type: %s" %
-                    r.headers["content-type"])
-                return "Data recieved from url was not an image. Content-type: %s" %
-                    r.headers["content-type"], 400
+                app.logger.error("Client sent a link to something that is not an image."\
+                        " Content-type: %s" % r.headers["content-type"])
+                return "Data recieved from url was not an image." \
+                    " Content-type: %s" % r.headers["content-type"], 400
             image_fname = hashlib.md5(r.content).hexdigest() + "." + ctype[1]
             image_fname = os.path.join(img_dir, image_fname)
 
