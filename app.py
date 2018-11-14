@@ -240,7 +240,14 @@ class Extract(Resource):
         if args["image_url"] is not None and args["image_url"] != "":
             app.logger.info("Downloading image from url: %s" % args["image_url"])
             url_time_0 = time.time()
-            r = requests.get(args["image_url"])
+            # strip quotation marks from url
+            url = args["image_url"].strip("\"\n")
+            try:
+                r = requests.get(url)
+            except:
+                app.logger.errror("Client provided a badly formatted url."\
+                        "(Exception in requiests.get)")
+                return "Badly formatted URL", 400
             url_time_diff = time.time() - url_time_0
             if r.status_code != 200:
                 app.logger.error("Client sent a link that no data could be downloaded from.")
