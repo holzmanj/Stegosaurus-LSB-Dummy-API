@@ -177,8 +177,6 @@ def batches_to_file(batches, output_dir):
     if file_hash != header_hash:
         if FAIL_ON_BAD_HASH:
             raise Exception("Content could not be retrieved from image. Hashes do not match.")
-        else:
-            app.logger.error("Data was not retrieved successfully. Hash verification failed.")
 
     # save file
     output_path = os.path.join(output_dir, file_name)
@@ -288,7 +286,7 @@ def extract(cfg, sess, logger, img_path, output_dir):
             feed_dict={'img_in:0': single_img_batch})
         batches_out[i] = single_batch_out[0]
 
-    app.logger("Converting output batches into file.")
+    logger.info("Converting output batches into file.")
     return batches_to_file(batches_out, output_dir)
 
     
