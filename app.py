@@ -245,7 +245,7 @@ class Extract(Resource):
             try:
                 r = requests.get(url)
             except:
-                app.logger.errror("Client provided a badly formatted url."\
+                app.logger.error("Client provided a badly formatted url."\
                         "(Exception in requiests.get)")
                 return "Badly formatted URL", 400
             url_time_diff = time.time() - url_time_0
