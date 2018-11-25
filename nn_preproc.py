@@ -4,6 +4,7 @@ import hashlib
 import math
 import os
 import tensorflow as tf
+from image_iterator import ImageIterator
 
 FAIL_ON_BAD_HASH = True
 
@@ -242,28 +243,34 @@ def insert(cfg, sess, logger, img_path, file_path, img_out_path):
     if get_capacity(img) < os.path.getsize(file_path):
         raise Exception("Content file is too large to be inserted into image.")
 
-    logger.info("Converting image to batches.")
-    img_batches = image_to_batches(img)
-    logger.info("Converting file to batches.")
-    file_batches = file_to_batches(file_path, n=img_batches.shape[0])
-
-    batches_out = img_batches.copy()
-    single_img_batch  = np.zeros((1, 32, 32, 3))
     single_file_batch = np.zeros((1, 32, 32, 1))
-    single_batch_out  = np.zeros((1, 32, 32, 3))
+
+    logger.info("Initializing image iterator")
+    img_iterator = ImageIterator(img_path, img_out_path)
+
+    logger.info("Converting file to batches.")
+    nbatches = img_iterator.max_x * img_iterator.max_y
+    file_batches = file_to_batches(file_path, n=nbatches)
 
     logger.info("Sending batches to neural network for insertion.")
-    for i in range(batches_out.shape[0]):
-        single_img_batch[0] = img_batches[i]
+    i = 0
+    while not img_iterator.done_writing:
+        block = img_iterator.get_next_block()
+        if block is None:
+            break
+        single_img_batch = image_to_batches(block)
+
         single_file_batch[0] = file_batches[i]
         single_batch_out = sess.run('alice_out:0', feed_dict={
             'img_in:0': single_img_batch,
             'msg_in:0': single_file_batch })
-        batches_out[i] = single_batch_out[0]
 
-    logger.info("Converting output batches into image.")
-    img_out = batches_to_image(batches_out, img)
-    cv2.imwrite(img_out_path, img_out)
+        block = batches_to_image(single_batch_out, block)
+        img_iterator.put_next_block(block)
+        i += 1
+
+    logger.info("Saving output image: %s" % img_out_path)
+    img_iterator.save_output()
 
 def extract(cfg, sess, logger, img_path, output_dir):
     """
@@ -271,22 +278,26 @@ def extract(cfg, sess, logger, img_path, output_dir):
     On success the file is saved to output_dir (file name comes from header).
     """
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-    logger.info("Converting image to batches.")
-    img_batches = image_to_batches(img)
+    logger.info("Initializing image iterator")
+    img_iterator = ImageIterator(img_path, None)
 
-    n = img_batches.shape[0]
+    n = img_iterator.max_x * img_iterator.max_y
     batches_out = np.zeros((n, 32, 32, 1))
-    single_img_batch  = np.zeros((1, 32, 32, 3))
     single_batch_out  = np.zeros((1, 32, 32, 1))
 
     logger.info("Sending batches to neural network for extraction.")
-    for i in range(n):
-        single_img_batch[0] = img_batches[i]
+    i = 0
+    while True:
+        block = img_iterator.get_next_block()
+        if block is None:
+            break
+
+        single_img_batch = image_to_batches(block)
         single_batch_out[0] = sess.run('bob_vars_1/bob_eval_out:0',
             feed_dict={'img_in:0': single_img_batch})
         batches_out[i] = single_batch_out[0]
+        i += 1
 
     logger.info("Converting output batches into file.")
     return batches_to_file(batches_out, output_dir)
 
-    

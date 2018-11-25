@@ -212,8 +212,8 @@ class Insert(Resource):
         output_fpath = os.path.join(img_dir, output_fname)
         try:
             pix_h, pix_w, _ = cv2.imread(image_fname, cv2.IMREAD_COLOR).shape
-            app.logger.info("Calling neural network insert for %dx%d image and %s file." % (pix_w, pix_h, 
-                       nn.format_capacity(os.stat(image_fname).st_size)))
+            app.logger.info("Calling neural network insert for %dx%d image and %s file." % (
+                pix_w, pix_h, nn.format_capacity(os.stat(file_name).st_size)))
             nn_time_0 = time.time()
             nn.insert(cfg, sess, app.logger, image_fname, file_name, output_fpath)
             nn_time_diff = time.time() - nn_time_0
