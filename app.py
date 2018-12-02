@@ -92,7 +92,20 @@ saver.restore(sess, tf.train.latest_checkpoint(save_dir))
 # ╝╚╝╚═╝╝╚╝   ╩ ╩╩  ╩  ╚═╝╝╚╝═╩╝╩  ╚═╝╩╝╚╝ ╩ ╚═╝
 
 @app.route("/")
-def home_page():
+@app.route("/encrypt")
+def encrypt_page():
+    return render_template("ryan_web_client/index.html")
+
+@app.route("/decrypt")
+def decrypt_page():
+    return render_template("ryan_web_client/decryption.html")
+
+@app.route("/about")
+def about_page():
+    return render_template("ryan_web_client/about.html")
+
+@app.route("/dev")
+def dev_home():
     return render_template("home.html")
 
 @app.route("/img/<filename>")
