@@ -184,8 +184,11 @@ function checkValidImageFile(imageFile, encryptedData)
 			if (this.status != 200) {
 				alert(this.response);
 			} else {
-				console.log(this.responseText);
-				changeView(this.response);
+				alert("adskcj;lnrevleqlu");
+				console.log(this.response.replace(/['"]+/g, ''));
+
+
+				changeView(this.response.replace(/['"]+/g, ''));
 			}
 		}
 	});
