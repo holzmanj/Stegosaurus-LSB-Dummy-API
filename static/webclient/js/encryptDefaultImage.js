@@ -172,27 +172,48 @@ Send a second key to the connection to the steg server along with the rest of th
   var form_data = new FormData();         //Inserts the image file into a data form so it can be processed by steg server
   //form_data.append("image", imageFile);
   form_data.append("content", downloadableFile);
+  form_data.append("key", serverKey);
 
-  $.ajax(
-  {
-    async:false,
-    contentType:false,
-    cache: false,
-    processData: false,
-    method: "POST",
-    data:form_data,
-    url:"php/encryptDefaultImage.php?key=" + serverKey + "&default=" + defaultNum,
-    success: function(data)
-      {
-        //alert(data);
-        console.log(data);
-        changeView(data.substring(1, data.length - 2))
-      },
-    error: function()
-      {
-        alert("Insert error");
-      }
-  });
+  /*  LOAD DEFAULT IMAGE INTO FILE OBJECT  */
+
+  // $.ajax(
+  // {
+    // async:false,
+    // contentType:false,
+    // cache: false,
+    // processData: false,
+    // method: "POST",
+    // data:form_data,
+    // url:"php/encryptDefaultImage.php?key=" + serverKey + "&default=" + defaultNum,
+    // success: function(data)
+      // {
+        // //alert(data);
+        // console.log(data);
+        // changeView(data.substring(1, data.length - 2))
+      // },
+    // error: function()
+      // {
+        // alert("Insert error");
+      // }
+  // });
+	  //
+	var xhr = new XMLHttpRequest();
+
+	xhr.addEventListener("readystatechange", function () {
+		if (this.readyState === 4) {
+			if (this.status != 200) {
+				alert(this.response);
+			} else {
+				console.log(this.responseText);
+				changeView(this.response);
+			}
+		}
+	});
+
+	xhr.open("POST", window.location.origin + "/api/insert");
+
+	xhr.send(form_data);
+
 
 
   //var newAesCbc = new aesjs.ModeOfOperation.cbc(clientKey, iv);

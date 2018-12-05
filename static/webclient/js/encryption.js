@@ -29,19 +29,16 @@ Send a second key to the connection to the steg server along with the rest of th
     reader.readAsArrayBuffer(dataToBeEncrypted);
 
     var fileName = dataToBeEncrypted.name;
+	  console.log("file name: " + fileName);
 
     reader.onload = function(e)
     {
       dataToBeEncrypted = reader.result;
 
-    //  var downloadableFile = new Blob([dataToBeEncrypted], {type: "text/plain;charset=utf-8"});
       var downloadableFile = new Blob([dataToBeEncrypted], {type: "application/octet-stream"});
 
-      //saveAs(downloadableFile, "fileBeforeEncrypt.txt");
-
       console.log(typeof(dataToBeEncrypted) + "size: " + dataToBeEncrypted.length);
-      console.log(dataToBeEncrypted);
-      aesEncrypt("fml");
+      aesEncrypt(fileName);
     }
   }
 
@@ -87,16 +84,7 @@ Send a second key to the connection to the steg server along with the rest of th
 
     var hexsecondhash = sjcl.codec.hex.fromBits(secondhash);
 
-    var generatedKey = new Uint8Array(32);
-
-    for(var i = 0; i < generatedKey.length; i++)
-    {
-      generatedKey[i] = parseInt(hexsecondhash.substr(i*2,2));
-
-    }
-
-    return generatedKey;
-
+	return aesjs.utils.hex.toBytes(hexsecondhash);
   }
 
   function generateRandom()
@@ -109,35 +97,14 @@ Send a second key to the connection to the steg server along with the rest of th
 
   }
 
-  function aesEncrypt(encryptedFileName){
+	function concatTypedArrays(a, b) { // a, b TypedArray of same type
+		var c = new (a.constructor)(a.length + b.length);
+		c.set(a, 0);
+		c.set(b, a.length);
+		return c;
+	}
 
-  serverKey = generateServerKey(encryptionKey);
-  clientKey = generateClientKey(encryptionKey);
-
-  var iv = [generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(),generateRandom(), generateRandom(),generateRandom(), generateRandom()];
-
-  //var textBytes = aesjs.utils.utf8.toBytes(dataToBeEncrypted);
-  var textBytes = new Uint8Array(dataToBeEncrypted);
-
-
-  console.log("bytes type " + textBytes.constructor.name + " bytes size " + textBytes.length + " text size " + dataToBeEncrypted.length);
-
-  while(textBytes.length % 16 != 0)
-  {
-    var tempBytes = new Uint8Array(textBytes.length + 1);
-    tempBytes.set(textBytes, 0);
-    tempBytes.set([0],textBytes.length);
-    textBytes=tempBytes;
-    console.log("text length " + textBytes.length + " temp length " + tempBytes.length)
-
-  }
-
-
-  var aesCbc = new aesjs.ModeOfOperation.cbc(clientKey, iv);
-  var encryptedFile = aesCbc.encrypt(textBytes);
-  //var encryptedHex = aesjs.util.hex.fromBytes(encryptedFile);
-  //alert(encryptedHex);
-  function checkValidImageFile(imageFile, encryptedData)
+function checkValidImageFile(imageFile, encryptedData)
   {
     var form_data = new FormData();         //Inserts the image file into a data form so it can be processed by steg server
     form_data.append("image", imageFile);
@@ -154,102 +121,79 @@ Send a second key to the connection to the steg server along with the rest of th
       return false;
     }
     var capacity = 0; //variable that stores the capacity of the image file
-
-    $.ajax(
-    {
-    async:false,
-    contentType:false,
-    cache: false,
-    processData: false,
-    method: "POST",
-    data: form_data,
-    url:"php/getcapacity.php",
-    success: function(data)
-      {
-        //console.log("testsetst");
-        console.log(data);
-        capacity = parseInt(data.substring(1, data.length - 1));
-        if(capacity > encryptedData.size)
-        {
-          alert("Image is large enough to hold encrypted data");
-          setTrue();
-        }
-        else
-        {
-          changeView("Image is too small to hold the file, capacity: " + capacity + " Size: " + encryptedData.size);
-          setFalse();
-        }
-      },
-    error: function()
-      {
-        console.log("Error using image");
-        setFalse();
-      }
-    });
-
-    var returnValue;
-    function setTrue()
-    {
-      returnValue = true;
-    }
-    function setFalse()
-    {
-      returnValue = false;
-    }
-    //alert("Value" + returnValue);
-    return returnValue;
-
-
-  }
-  var encryptedString = "";
-  for(var i = 0; i < encryptedFile.length; i++)
-  {
-    encryptedString = encryptedString + String.fromCharCode(encryptedFile[i]);
+/*
+ * TODO check against capacity call
+*/ return true;
 
   }
 
-  var stringIv = "";
 
-  for(var j =0; j < iv.length; j++)
-  {
-    stringIv = stringIv + String.fromCharCode(iv[j]);
-  }
+  function aesEncrypt(encryptedFileName){
 
-  //var encryptedString = aesjs.utils.utf8.fromBytes(encryptedFile);
+  serverKey = generateServerKey(encryptionKey);
+  clientKey = generateClientKey(encryptionKey);
 
-  //var stringIv = aesjs.utils.utf8.fromBytes(iv);
+  // var iv = [generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(), generateRandom(),generateRandom(), generateRandom(),generateRandom(), generateRandom()];
 
-  //var downloadableFile = new Blob([btoa(stringIv) + btoa(encryptedString)], {type: "text/plain;charset=utf-8"});
-  var downloadableFile = new Blob([iv.concat(encryptedFile)], {type: "application/octet-stream"});
-  saveAs(downloadableFile, "encryptedFile.txt");
+	var iv = new Uint8Array(16);
+	for (var i = 0; i < 16; i++) {
+		iv[i] = generateRandom();
+	}
 
+	var intBuffer = new Uint8Array(dataToBeEncrypted);
 
-  if(checkValidImageFile(imageFile, downloadableFile) == true)
+	// pad plaintext with zero-bytes
+	if (intBuffer.length % 16 != 0) {
+		var padSize = 16 - intBuffer.length % 16;
+		var zeroPadding = new Uint8Array(padSize);
+		for (var i = 0; i < padSize; i++) {
+			zeroPadding[i] = 0;
+		}
+		intBuffer = concatTypedArrays(intBuffer, zeroPadding);
+	}
+
+	/////////////////////////////////
+	// Encrypting the content file //
+	/////////////////////////////////
+
+	console.log(clientKey);
+	var aesCbc = new aesjs.ModeOfOperation.cbc(clientKey, iv);
+	var encryptedData = aesCbc.encrypt(intBuffer);
+
+	var encryptedBytes = new Uint8Array(iv.length + encryptedData.length);
+	for (var i = 0; i < iv.length; i++) {
+		encryptedBytes[i] = iv[i];
+	}
+	for (var i = 0; i < encryptedData.length; i++) {
+		encryptedBytes[iv.length + i] = encryptedData[i];
+	}
+
+	var encryptedFile = new File([encryptedBytes], encryptedFileName, {type: "application/octet-stream", lastModified: Date.now()});
+
+  if(checkValidImageFile(imageFile, encryptedFile) == true)
   {
     var form_data = new FormData();         //Inserts the image file into a data form so it can be processed by steg server
     form_data.append("image", imageFile);
-    form_data.append("content", downloadableFile);
+    form_data.append("content", encryptedFile);
+	form_data.append("key", serverKey);
 
-    $.ajax(
-    {
-    async:false,
-    contentType:false,
-    cache: false,
-    processData: false,
-    method: "POST",
-    data:form_data,
-    url:"php/encryptdata.php?key=" + serverKey,
-    success: function(data)
-      {
-        //alert(data);
-        console.log(data);
-        changeView(data.substring(1, data.length - 3))
-      },
-    error: function()
-      {
-        alert("Insert error");
-      }
-    });
+	var xhr = new XMLHttpRequest();
+
+	xhr.addEventListener("readystatechange", function () {
+		if (this.readyState === 4) {
+			if (this.status != 200) {
+				alert(this.response);
+			} else {
+				console.log(this.responseText);
+				changeView(this.response);
+			}
+		}
+	});
+
+	xhr.open("POST", window.location.origin + "/api/insert");
+
+	xhr.send(form_data);
+
   }
   else
   {
@@ -267,7 +211,7 @@ Send a second key to the connection to the steg server along with the rest of th
 */
 
 
-  return encryptedFile;
+  return encryptedBytes;
   /*Call encryptdata.php, inputs are serverKey, imageFile, encryptedFile*/
   }
 }

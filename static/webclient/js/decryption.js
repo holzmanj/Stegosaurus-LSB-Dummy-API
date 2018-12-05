@@ -44,14 +44,7 @@ function setPassword(decryptionKey)
     var hexsecondhash = sjcl.codec.hex.fromBits(secondhash);
 
     var generatedKey = new Uint8Array(32);
-
-    for(var i = 0; i < generatedKey.length; i++)
-    {
-      generatedKey[i] = parseInt(hexsecondhash.substr(i*2,2));
-
-    }
-
-    return generatedKey;
+	return aesjs.utils.hex.toBytes(hexsecondhash);
 
   }
   clientKey = generateClientKey(decryptionKey);
@@ -59,67 +52,79 @@ function setPassword(decryptionKey)
 
 }
 
+function decrypt_file(fileBlob, keybytes, filename) {
+	var fileReader = new FileReader();
+	fileReader.onload = function(event) {
+		var arrayBuffer = this.result;
+		var bufferBytes = new Uint8Array(arrayBuffer);
+		//////////////////////////////
+		// Decrypt the content file //
+		//////////////////////////////
+		var iv = bufferBytes.slice(0, 16);
+		var dataBytes = bufferBytes.slice(16);
+		var aesCbc = new aesjs.ModeOfOperation.cbc(keybytes, iv);
+		var decryptedData = aesCbc.decrypt(dataBytes);
+		
+		var plaintextBlob = new Blob([decryptedData]);
+		saveAs(plaintextBlob, filename);
+	};
+	fileReader.readAsArrayBuffer(fileBlob);
+}
+
 function clientSideDecryption(fileToBeDecrypted)
 {
 
   if(typeof(fileToBeDecrypted) == "string")
   {
+	var data = new FormData();
+	data.append("image_url", fileToBeDecrypted);
+	data.append("key", serverKey);
 
-    $.ajax(
-    {
-    async:false,
-    contentType:false,
-    cache: false,
-    processData: false,
-    url:"php/decryptLinkData.php?key=" + serverKey + "&image_url=" + fileToBeDecrypted,
-    success: function(data)
-      {
-      /*  alert(data.substring(0,data.length-1));
-        console.log("Length: " + data.substring(0,data.length-1).length);
-        fileToBeDecrypted= data.substring(0,data.length-1);
-*/
-        //alert(data.substring(0,data.length-1));
-        console.log("Length: " + data.substring(0,data.length-1).length);
-        fileToBeDecrypted= data.substring(0,data.length-1);
-        console.log(fileToBeDecrypted);
-        var fileArray = fileToBeDecrypted.split(',').map(function(num){return parseInt(num);});
-        console.log(fileArray);
-        Uint8Array.from(fileArray);
+	var xhr = new XMLHttpRequest();
+	xhr.responseType = "blob";
+	xhr.addEventListener("readystatechange", function () {
+		if (this.readyState === 4) {
+			if (xhr.status != 200) {
+				console.log(this.statusText);
+			} else {
+				var filename = this.getResponseHeader("content-disposition").split("=")[1];
+				decrypt_file(this.response, clientKey, filename);
+			}
+		}
+	});
 
-        var downloadableFile = new Blob([fileArray], {type:"application/octet-stream"});
-        //saveAs(downloadableFile, "extractedBlob.txt");
-        fileToBeDecrypted=fileArray;
-//
-        var iv = fileToBeDecrypted.slice(0,16);
-        console.log(iv);
-        //alert("File to be decrypted length " + atob(fileToBeDecrypted.substring(24, fileToBeDecrypted.length)).length);
+	xhr.open("POST", window.location.origin + "/api/extract");
 
-        //var encryptedText = fileToBeDecrypted.substring(24, fileToBeDecrypted.length);
-        var encryptedText = fileToBeDecrypted.slice(16,fileToBeDecrypted.length);
-        iv = Array.from(iv);
+	xhr.send(data);
 
-        var aesCbc = new aesjs.ModeOfOperation.cbc(clientKey, iv);
-
-
-        var decryptedBytes = aesCbc.decrypt(encryptedText);
-        //alert(decryptedBytes);
-
-
-
-        var downloadableFile = new Blob([decryptedBytes], {type: "application/octet-stream"});
-        saveAs(downloadableFile, "decryptedFile.txt");
-
-
-
-      },
-    error: function()
-      {
-        alert("Insert error");
-      }
-    });
+///////////////////////////////////////////////////////////////////
   }
   else
   {
+	var data = new FormData();
+	data.append("image", fileToBeDecrypted);
+	data.append("key", serverKey);
+
+	var xhr = new XMLHttpRequest();
+	xhr.responseType = "blob";
+	xhr.addEventListener("readystatechange", function () {
+		if (this.readyState === 4) {
+			if (xhr.status != 200) {
+				console.log(this.statusText);
+			} else {
+				var filename = this.getResponseHeader("content-disposition").split("=")[1];
+				decrypt_file(this.response, clientKey, filename);
+			}
+		}
+	});
+
+	xhr.open("POST", window.location.origin + "/api/extract");
+
+	xhr.send(data);
+
+
+/*
+
     var form_data = new FormData();         //Inserts the image file into a data form so it can be processed by steg server
     form_data.append("image", fileToBeDecrypted);
     //form_data.append("content", downloadableFile);
@@ -173,7 +178,7 @@ function clientSideDecryption(fileToBeDecrypted)
       {
         alert("Insert error");
       }
-    });
+    });*/
   }
 
 /*
