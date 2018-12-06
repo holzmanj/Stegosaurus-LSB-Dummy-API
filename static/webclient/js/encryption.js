@@ -59,15 +59,7 @@ Send a second key to the connection to the steg server along with the rest of th
 
     var hexsecondhash = sjcl.codec.hex.fromBits(secondhash);
 
-    var generatedKey = new Uint8Array(32);
-
-    for(var i = 0; i < generatedKey.length; i++)
-    {
-      generatedKey[i] = parseInt(hexsecondhash.substr(i*2,2));
-
-    }
-
-    return generatedKey;
+	return hexsecondhash;
 
   }
 

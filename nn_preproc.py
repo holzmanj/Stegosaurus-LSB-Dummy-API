@@ -5,11 +5,21 @@ import math
 import os
 import tensorflow as tf
 from image_iterator import ImageIterator
+from Crypto.Cipher import ARC4
+from Crypto.Hash import SHA
 
 FAIL_ON_BAD_HASH = True
 
 def nn_to_bin(batch):
     return np.around(batch).astype(int)
+
+def encrypt(msg, key):
+    cipher = ARC4.new(SHA.new(key).digest())
+    return cipher.encrypt(msg)
+
+def decrypt(ct, key):
+    decipher = ARC4.new(SHA.new(key).digest())
+    return decipher.decrypt(ct)
 
 def get_capacity(img):
     h, w, _ = img.shape
@@ -118,13 +128,14 @@ def batch_to_bytes(batch):
                 bits = ""
     return bytes(byte_vals)
 
-def file_to_batches(file_path, n=None):
+def file_to_batches(file_path, key, n=None):
     """
     Reads file from given path and converts it into nx32x32x1 batches for the neural network
     First three batches hold the header data (file name, file size, and hash).
     If n is set, the batch set will be padded to n batches.
     """
     header_bytes = generate_header(file_path)
+    header_bytes = encrypt(header_bytes, key)
 
     filesize = os.path.getsize(file_path)
     if n is None:
@@ -141,6 +152,7 @@ def file_to_batches(file_path, n=None):
             batches[i] = bytes_to_batch(header_bytes[128*i:128*(i+1)])
 
         # convert file to batches
+        file_bytes = b''
         for batch_no in range(3, n):
             buf = file.read(128)
 
@@ -148,10 +160,17 @@ def file_to_batches(file_path, n=None):
                 # pad with null bytes
                 buf = buf + b'\0' * (128 - len(buf))
 
+            file_bytes += buf
+
+        file_bytes = encrypt(file_bytes, key)
+
+        for batch_no in range(3, n):
+            buf = file_bytes[128 * (batch_no - 3):128 * (batch_no - 2)]
             batches[batch_no] = bytes_to_batch(buf)
+
     return batches
 
-def batches_to_file(batches, output_dir):
+def batches_to_file(batches, key, output_dir):
     """
     Converts content batches recieved from the neural network into a file.
     File name is derived from the header data and the file is saved to the specified directory.
@@ -160,6 +179,8 @@ def batches_to_file(batches, output_dir):
     header_bytes = b''
     for n in range(3):
         header_bytes += batch_to_bytes(batches[n])
+
+    header_bytes = decrypt(header_bytes, key)
     file_size, header_hash, file_name = parse_header(header_bytes)
 
     if file_size > (batches.shape[0] - 3) * 128:
@@ -171,6 +192,8 @@ def batches_to_file(batches, output_dir):
         file_bytes += batch_to_bytes(batches[n])
         if len(file_bytes) >= file_size:
             break
+
+    file_bytes = decrypt(file_bytes, key)
     file_bytes = file_bytes[:file_size]
 
     # verify hash
@@ -231,7 +254,7 @@ def batches_to_image(batches, img):
                 return img_out
 
 
-def insert(cfg, sess, logger, img_path, file_path, img_out_path):
+def insert(cfg, sess, logger, img_path, file_path, key, img_out_path):
     """
     Inserts the file at file_path into the image at img_path using the neural network.
     Saves the resulting image to img_out_path
@@ -250,7 +273,7 @@ def insert(cfg, sess, logger, img_path, file_path, img_out_path):
 
     logger.info("Converting file to batches.")
     nbatches = img_iterator.max_x * img_iterator.max_y
-    file_batches = file_to_batches(file_path, n=nbatches)
+    file_batches = file_to_batches(file_path, key, n=nbatches)
 
     logger.info("Sending batches to neural network for insertion.")
     i = 0
@@ -272,7 +295,7 @@ def insert(cfg, sess, logger, img_path, file_path, img_out_path):
     logger.info("Saving output image: %s" % img_out_path)
     img_iterator.save_output()
 
-def extract(cfg, sess, logger, img_path, output_dir):
+def extract(cfg, sess, logger, img_path, key, output_dir):
     """
     Extracts a content file from the image at img_path using the neural network.
     On success the file is saved to output_dir (file name comes from header).
@@ -299,5 +322,6 @@ def extract(cfg, sess, logger, img_path, output_dir):
         i += 1
 
     logger.info("Converting output batches into file.")
-    return batches_to_file(batches_out, output_dir)
+    logger.info("File is %d batches." % batches_out.shape[0])
+    return batches_to_file(batches_out, key, output_dir)
 

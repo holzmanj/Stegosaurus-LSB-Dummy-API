@@ -234,7 +234,10 @@ class Insert(Resource):
             app.logger.info("Calling neural network insert for %dx%d image and %s file." % (
                 pix_w, pix_h, nn.format_capacity(os.stat(file_name).st_size)))
             nn_time_0 = time.time()
-            nn.insert(cfg, sess, app.logger, image_fname, file_name, output_fpath)
+            key = args["key"].strip("\"\n")
+            print(key)
+            key = bytes.fromhex(key)
+            nn.insert(cfg, sess, app.logger, image_fname, file_name, key, output_fpath)
             nn_time_diff = time.time() - nn_time_0
             app.logger.info("Neural network insert finished. Seconds elapsed: %s" % nn_time_diff)
             os.remove(image_fname)
@@ -301,7 +304,9 @@ class Extract(Resource):
             app.logger.info("Calling neural network extract for %s image." %
                 nn.format_capacity(os.stat(image_fname).st_size))
             nn_time_0 = time.time()
-            file_out = nn.extract(cfg, sess, app.logger, image_fname, files_dir)
+            print(args["key"].strip("\"\n"))
+            key = bytes.fromhex(args["key"].strip("\"\n"))
+            file_out = nn.extract(cfg, sess, app.logger, image_fname, key, files_dir)
             nn_time_diff = time.time() - nn_time_0
             app.logger.info("Neural network extract finished. Seconds elapsed: %s" % nn_time_diff)
             os.remove(image_fname)
@@ -314,4 +319,5 @@ class Extract(Resource):
             if file_out is not None:
                 if os.path.isfile(file_out):
                     os.remove(file_out)
+            app.logger.error(str(e))
             return str(e), 400

@@ -16,18 +16,7 @@ function setPassword(decryptionKey)
     console.log("Server Second Hash: " + sjcl.codec.hex.fromBits(secondhash));
 
     var hexsecondhash = sjcl.codec.hex.fromBits(secondhash);
-
-    var generatedKey = new Uint8Array(32);
-
-    for(var i = 0; i < generatedKey.length; i++)
-    {
-      generatedKey[i] = parseInt(hexsecondhash.substr(i*2,2));
-
-    }
-
-    return generatedKey;
-
-
+	return hexsecondhash
   }
 
   function generateClientKey(decryptionKey)
