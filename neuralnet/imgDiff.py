@@ -21,6 +21,27 @@ def split_into_rgb_channels(image):
     return red, green, blue
 
 
+def get_pixel_difference(color,difference_img_path):
+  '''Calculate the percentage of pixels altered in a given image.
+  color - the string representation of the color channel (red, green, blue).
+  difference_img - a numpy array of shape (rows, columns,3).
+  '''
+
+  difference_img = cv2.imread(difference_img_path, cv2.IMREAD_COLOR)
+  percent_diff = (np.count_nonzero(difference_img) * 100)/ difference_img.size
+  return "Percentage of pixels altered in %s channel: %0.2f%%" % (color, percent_diff)
+
+def get_variation(color,difference_img_path):
+  '''Calculate the percentage of variation in a given image.
+  color - the string representation of the color channel (red, green, blue).
+  difference_img - a numpy array of shape (rows, columns,3).
+  '''
+
+  difference_img = cv2.imread(difference_img_path, cv2.IMREAD_COLOR)
+  total_change = np.sum(difference_img) * 100/ (difference_img.size * 255)
+  return "Percentage of variation in %s channel: %0.2f%%" % (color, total_change)
+
+
 def compare_images(img_path1, img_path2, out_dir):
     '''check that images exist'''
     if os.path.exists(img_path1) and os.path.exists(img_path2):

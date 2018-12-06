@@ -157,12 +157,18 @@ def img_compare():
                 os.remove(img_path2)
                 return render_template("img_compare.html", error=e)
             image_fnames = list(image_fnames)
+            info_string = ""
+            colors = ("red", "green", "blue")
             for i in range(len(image_fnames)):
+                if i != 0:
+                    info_string += img_diff.get_pixel_difference(colors[i-1], os.path.join(img_dir, image_fnames[i])) + "\n"
+                    info_string += img_diff.get_variation(colors[i-1], os.path.join(img_dir, image_fnames[i])) + "\n\n"
                 image_fnames[i] = request.url_root + "img/" + image_fnames[i]
+
             os.remove(img_path1)
             os.remove(img_path2)           
             return render_template("img_compare.html", diff_img = image_fnames[0], r_img = image_fnames[1],
-                g_img = image_fnames[2], b_img = image_fnames[3])
+                g_img = image_fnames[2], b_img = image_fnames[3], diff_info = info_string)
         else:
             return render_template("img_compare.html", error="Missing one or more images.")
     return render_template("img_compare.html")
