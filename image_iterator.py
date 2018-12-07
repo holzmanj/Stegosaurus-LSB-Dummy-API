@@ -26,6 +26,8 @@ class ImageIterator():
         self.max_x = w // BLOCK_WIDTH
         self.max_y = h // BLOCK_HEIGHT
 
+        print("h: %d w: %d\nmax_x: %d max_y: %d" % (h, w, self.max_x, self.max_y))
+
         self.done_reading = False
         self.done_writing = False
 
@@ -45,7 +47,7 @@ class ImageIterator():
 
     def put_next_block(self, block):
         if self.out_path is None:
-            raise Exception("put_next_block was called on a read-only ImageIterator.")
+            raise Exception("put_next_block was called on an ImageIterator with no out_path.")
         if self.done_writing:
             return
         if block.shape[0] != BLOCK_HEIGHT or block.shape[1] != BLOCK_WIDTH:
@@ -55,11 +57,14 @@ class ImageIterator():
         if self.out_x == self.max_x:
             self.out_y += 1
             self.out_x = 0
-            if self.out_y == self.max_x:
+            if self.out_y >= self.max_y:
                 self.done_writing = True
                 return
+        print("writing image[%d:%d][%d:%d]" % (self.out_y*BLOCK_HEIGHT, (self.out_y+1)*BLOCK_HEIGHT,
+            self.out_x*BLOCK_WIDTH, (self.out_x+1)*BLOCK_WIDTH))
         self.img_out[ self.out_y*BLOCK_HEIGHT: (self.out_y+1)*BLOCK_HEIGHT,
                 self.out_x*BLOCK_WIDTH : (self.out_x+1)*BLOCK_WIDTH ] = block
+        print("incrementing x")
         self.out_x += 1
 
     def save_output(self):
