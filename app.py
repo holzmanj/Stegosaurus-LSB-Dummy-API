@@ -234,6 +234,7 @@ class Insert(Resource):
             app.logger.info("Calling neural network insert for %dx%d image and %s file." % (
                 pix_w, pix_h, nn.format_capacity(os.stat(file_name).st_size)))
             nn_time_0 = time.time()
+            app.logger.info("String passed as key for insert: %s" % args["key"])
             key = args["key"].strip("\"\n")
             key = bytes.fromhex(key)
             nn.insert(cfg, sess, app.logger, image_fname, file_name, key, output_fpath)
@@ -303,6 +304,7 @@ class Extract(Resource):
             app.logger.info("Calling neural network extract for %s image." %
                 nn.format_capacity(os.stat(image_fname).st_size))
             nn_time_0 = time.time()
+            app.logger.info("String passed as key for insert: %s" % args["key"])
             key = bytes.fromhex(args["key"].strip("\"\n"))
             file_out = nn.extract(cfg, sess, app.logger, image_fname, key, files_dir)
             nn_time_diff = time.time() - nn_time_0
