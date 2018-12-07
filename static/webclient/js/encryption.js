@@ -109,7 +109,6 @@ function checkValidImageFile(imageFile, encryptedData)
 
     if($.inArray(imageextension, ["png", "bmp", "jpg"]) == -1)
     {
-      alert("Not valid image file");
       return false;
     }
     var capacity = 0; //variable that stores the capacity of the image file
@@ -175,6 +174,7 @@ function checkValidImageFile(imageFile, encryptedData)
 		if (this.readyState === 4) {
 			if (this.status != 200) {
 				alert(this.response);
+				window.location = window.location.origin + "/encrypt";
 			} else {
 				console.log(this.response.replace(/['"]+/g, ''));
 				changeView(this.response.replace(/['"]+/g, ''));
