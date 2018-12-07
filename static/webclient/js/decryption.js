@@ -77,9 +77,9 @@ function clientSideDecryption(fileToBeDecrypted)
 				var reader = new FileReader();
 				reader.onload = function() {
 					alert(reader.result);
+					window.location = window.location.origin + "/decrypt";
 				}
 				reader.readAsText(this.response);
-				console.log(this.statusText);
 			} else {
 				var filename = this.getResponseHeader("content-disposition").split("=")[1];
 				decrypt_file(this.response, clientKey, filename);
@@ -107,6 +107,7 @@ function clientSideDecryption(fileToBeDecrypted)
 				var reader = new FileReader();
 				reader.onload = function() {
 					alert(reader.result);
+					window.location = window.location.origin + "/decrypt";
 				}
 				reader.readAsText(this.response);
 				console.log(this.statusText);

@@ -84,7 +84,6 @@
             {
               if($("input[name='inputImageFile']").val().length != 0)
               {
-                alert("Using uploaded image");
                 var theimagefile = document.getElementById("inputimagefile").files[0];
 
                 if($("input[name='inputText']").val().length > 0)
@@ -105,7 +104,6 @@
               //call takeLinkInput
               else if($("input[name='defaultImage']:checked").val() != null)
               {
-                alert("Using selected default image");
                 var encryptionKey = $("input[name='password']").val();
                 //var file = document.getElementById("inputfile").files[0];
                 //var text = $("input[name='inputText']").val();
@@ -152,7 +150,7 @@
       <div class="collapse navbar-collapse" id="navbarsExampleDefault">
         <ul class="navbar-nav mr-auto">
           <li class="nav-item">
-            <a class="nav-link" href="#">Encryption <span class="sr-only">(current)</span></a>
+            <a class="nav-link" href="/encrypt">Encryption <span class="sr-only">(current)</span></a>
           </li>
           <li class="nav-item active">
             <a class="nav-link" href="/decrypt">Decryption</a>
@@ -232,8 +230,8 @@
       <!--EncryptedOutputView-->
       <form id="EncryptedOutputView" class="starter-template">
         <h1>Encrypted Image</h1>
-		<img id="outputfile" src="{{ url_for('static', filename='webclient/images/Hacker1.jpg') }}" style="max-width:90%; height:auto;"> <!--Placeholder image-->
-        <p id="outputlink">Placeholder link</p>    <!--Where the link goes-->
+		<img id="outputfile" src="{{ url_for('static', filename='webclient/images/loading.gif') }}" style="max-width:90%; height:auto;"> <!--Placeholder image-->
+        <p id="outputlink">Inserting file into image...</p>    <!--Where the link goes-->
         <button id="SubmitAgain" type="submit" class="btn btn-lg btn-primary btn-block" style="margin:2%; background-color: #517664; border-color:#517664; display:inline-block;">Go Back</button>
       </form>
 
