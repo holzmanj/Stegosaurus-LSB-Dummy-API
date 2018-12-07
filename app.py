@@ -236,7 +236,10 @@ class Insert(Resource):
             nn_time_0 = time.time()
             app.logger.info("String passed as key for insert: %s" % args["key"])
             key = args["key"].strip("\"\n")
-            key = bytes.fromhex(key)
+            try:
+                key = bytes.fromhex(key)
+            except:
+                return "Expecting a hex string for key paramter. Got: %s" % args["key"], 400
             nn.insert(cfg, sess, app.logger, image_fname, file_name, key, output_fpath)
             nn_time_diff = time.time() - nn_time_0
             app.logger.info("Neural network insert finished. Seconds elapsed: %s" % nn_time_diff)
@@ -305,7 +308,11 @@ class Extract(Resource):
                 nn.format_capacity(os.stat(image_fname).st_size))
             nn_time_0 = time.time()
             app.logger.info("String passed as key for insert: %s" % args["key"])
-            key = bytes.fromhex(args["key"].strip("\"\n"))
+            key = args["key"].strip("\"\n")
+            try:
+                key = bytes.fromhex(key)
+            except:
+                return "Expecting a hex string for key paramter. Got: %s" % args["key"], 400
             file_out = nn.extract(cfg, sess, app.logger, image_fname, key, files_dir)
             nn_time_diff = time.time() - nn_time_0
             app.logger.info("Neural network extract finished. Seconds elapsed: %s" % nn_time_diff)
