@@ -190,6 +190,7 @@ function checkValidImageFile(imageFile, encryptedData)
   else
   {
     alert("You must insert a valid image file");
+	window.location = window.location.origin + "/encrypt";
   }
 /*
   var newAesCbc = new aesjs.ModeOfOperation.cbc(clientKey, iv);
