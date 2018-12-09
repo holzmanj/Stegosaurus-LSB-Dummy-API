@@ -30,11 +30,11 @@
 
             if(typeof(inputfile) == "undefined" && inputlink.length == 0)
             {
-                alert("Need to upload an image file with embedded data");
+                alert("Upload an image file with embedded data");
             }
             else if(inputpassword.length == 0)
             {
-                alert("Need a password");
+                alert("Enter a password");
             }
             else
             {
@@ -91,14 +91,15 @@
           <!--DecryptionSubmissionView-->
           <form id="DecryptionSubmissionView" class="starter-template">
             <h1>Stegosaurus Decryption</h1>
-            <p class="lead">You can upload a link to a picture you want to use for decrytion, or the image itself.</p>
+            <!-- <p class="lead"> upload a link to a picture you want to use for decrytion, or the image itself.</p> -->
 
-            <p>Upload the image file you want to extract data from</p>
-            <input type="file" id="inputFile" name="inputFile" ></input>
-            <p>Or</p>
+            <p class="lead">Extract data from an image on your computer</p>
+            <input type="file" id="inputFile" name="inputFile" style="margin-bottom:5px;" ></input>
+            <p class="lead" style="font-weight:bold;">Or</p>
+            <p class="lead">Paste the link to an encrypted image</p>
             <div style="text-align:center"><input type="text" name="inputLinkText" id="inputLink" class="form-control" style="display:inline-block;" placeholder="Image Link"></div>
-            <br><br><br><br><br>
-            <p>Type in the password you want to use to get the file out of the image later</p>
+			<br><br><br>
+            <p class="lead">Enter the password for this image</p>
             <input type="password" name="password" id="inputPassword" class="form-control" style="display:inline-block;" placeholder="Password">
             <br>
             <button id="SubmissionButton" class="btn btn-lg btn-primary btn-block" type="button" style="margin:2%; background-color: #517664; border-color:#517664; display:inline-block;">Enter Data</button>

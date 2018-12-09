@@ -15,12 +15,32 @@
 
   </head>
   <script>
+	var SELECTED_FILE_SIZE = 0;
 	$(document).keypress(
 	  function(event){
 		if (event.which == '13') {
 		  event.preventDefault();
 		}
 	});
+
+	var formatByteSize = function(byteCount) {
+		var units = ["B", "KB", "MB", "GB"];
+		var unitCount = byteCount;
+		var unitIndex = 0;
+
+		while(unitCount > 1024 && unitIndex < units.length+1) {
+			unitCount /= 1024.0;
+			unitIndex += 1;
+		}
+
+		// print whole number for bytes, and float to 2 places for everything bigger
+		if (unitIndex > 0) {
+			unitCount = unitCount.toFixed(2);
+		}
+
+		return `${unitCount} ${units[unitIndex]}`
+	}
+
   $(document).ready(function()
   		{
 							//Puts the user in the EncryptedSubmissionView
@@ -35,20 +55,6 @@
           $("#ImageButton").click(function()
           {										//Puts the user in the EncryptedOutputView after they submit data
 
-                /*var defaultSelected = $("input[name='defaultImage']:checked").val();
-                var encryptionKey = $("input[name='password']").val();
-                var dataToBeEncrypted = $("input[name='inputFile']").val();
-
-                if(defaultSelected == 1)
-                  takeDefaultInput("images/default1.jpg", dataToBeEncrypted, encryptionKey);
-                else if(defaultSelected == 2)
-                  takeDefaultInput("images/default2.jpg", dataToBeEncrypted, encryptionKey);
-                else if(defaultSelected == 3)
-                  takeDefaultInput("images/default3.png", dataToBeEncrypted, encryptionKey);
-                else if(defaultSelected == 4)
-                  takeDefaultInput("images/default4.jpg", dataToBeEncrypted, encryptionKey);
-*/
-
             var file = document.getElementById("inputfile").files[0];
             var text = $("input[name='inputText']").val();
 
@@ -62,13 +68,18 @@
             {
                 if(file != null)
                 {
-                  var reader = new FileReader();
+				   SELECTED_FILE_SIZE = file.size;
+				   document.getElementById("filesize-label").innerHTML = "Inserting a " + formatByteSize(SELECTED_FILE_SIZE) + " file.";
+                   var reader = new FileReader();
                    dataToBeEncrypted = reader.readAsText(file);
                 }
                 else
                 {
+					SELECTED_FILE_SIZE = text.length;
+				   document.getElementById("filesize-label").innerHTML = "Inserting a " + formatByteSize(SELECTED_FILE_SIZE) + " text message.";
                     dataToBeEncrypted = text;
                 }
+
 
                   $("#EncryptionSubmissionView").hide();
                   $("#EncryptionImageView").show();
@@ -143,8 +154,37 @@
                  $("#EncryptedOutputView").hide();
           });
 
+		// Get capacity of uploaded image
+		$("#inputimagefile").change(function() {
+			document.getElementById("customFileSizeLabel").innerHTML = "Calculating capacity...";
+			var form_data = new FormData();
+			form_data.append("image", 
+				document.getElementById("inputimagefile").files[0]
+			);
+			form_data.append("formatted", true);
+
+			var xhr = new XMLHttpRequest();
+			xhr.addEventListener("readystatechange", function() {
+				if (this.readyState === 4) {
+					if (this.status != 200) {
+						document.getElementById("customFileSizeLabel").innerHTML = "Error: " +
+							this.response.replace(/['"]+/g, '');
+					} else {
+						document.getElementById("customFileSizeLabel").innerHTML = "Capacity: " +
+							this.response.replace(/['"]+/g, '');
+					}
+				}
+			});
+			xhr.open("POST", window.location.origin + "/api/get_capacity");
+			xhr.send(form_data);
+		});
+
+
+
+
       });
-  	</script>
+
+	  	</script>
   <body>
 
     <nav class="navbar navbar-expand-md navbar-dark fixed-top">
@@ -175,12 +215,11 @@
       <form id="EncryptionSubmissionView">
         <h1>Stegosaurus Encryption</h1>
 
-        <p>Upload the file you want to hide in the image</p>
-        <input type="file" id="inputfile" name="inputFile" ></input>
-        <br><br><br>
+        <p class="lead">Upload a file you want to hide within an image</p>
+        <input type="file" id="inputfile" name="inputFile" style="margin-bottom:5px;"></input>
 
-        <h6>Or</h6>
-        <p>Type in the message you want to hide</p>
+        <p class="lead" style="font-weight:bold;">Or</p>
+        <p class="lead">Type in a text message</p>
         <div>
           <input type="text" id="intputtext" name="inputText" ></input>
         </div>
@@ -192,43 +231,48 @@
       </form>
       <form id="EncryptionImageView">
         <h1>Image Selection</h1>
-        <br>
-        <!--<p class="lead">You can upload a link to a picture you want to use for encrytion, or the image itself.</p>-->
-        <p>Upload the image you want to hide the file in</p>
-        <input type="file" id="inputimagefile" name="inputImageFile" ></input>
+        
+		<p style="color:grey;" id="filesize-label">...</p>
+        <p class="lead">Upload your own image to hide the file in</p>
+        <input type="file" id="inputimagefile" name="inputImageFile" style="margin-bottom:5px;"></input>
+		<p style="color:grey;font-size:10pt;" id="customFileSizeLabel"></p>
 <!--
         <p>Or</p>
         <div style="text-align:center"><input type="text" name="inputLinkText" id="inputLink" class="form-control" style="display:inline-block;" placeholder="Enter image link here"></div>
 -->
-        <p>Or</p>
-        <p class="lead">Choose one of these default images.</p>
+        <p class="lead" style="font-weight:bold;">Or</p>
+        <p class="lead">Choose one of these default images</p>
         <div id="DefaultImageSelector">
           <div class="defaultChoice">
               <input type="radio" id="defaultImage1" class="defaultImage" name="defaultImage" value="1">
 			  <label class="defaultImageLabel" for="defaultImage1">
 				  <img src="{{ url_for('static', filename='webclient/images/default1.jpg') }}"></img></label>
+			  <p style="color:grey;font-size:10pt;">Capacity: 252.75 KB</p>
           </div>
 
           <div class="defaultChoice">
               <input type="radio" id="defaultImage2" class="defaultImage" name="defaultImage" value="2">
 			  <label class="defaultImageLabel" for="defaultImage2">
 				  <img src="{{ url_for('static', filename='webclient/images/default2.jpg') }}"></img></label>
+			  <p style="color:grey;font-size:10pt;">Capacity: 449.62 KB</p>
           </div>
 
           <div class="defaultChoice">
             <input type="radio" id="defaultImage3" class="defaultImage" name="defaultImage" value="3">
 			<label class="defaultImageLabel" for="defaultImage3">
 				<img src="{{ url_for('static', filename='webclient/images/default3.jpg') }}"></img></label>
+			  <p style="color:grey;font-size:10pt;">Capacity: 252.75 KB</p>
           </div>
 
           <div class="defaultChoice">
             <input type="radio" id="defaultImage4" class="defaultImage" name="defaultImage" value="4">
 			<label class="defaultImageLabel" for="defaultImage4">
 				<img src="{{ url_for('static', filename='webclient/images/default4.jpg') }}"></img></label>
+			  <p style="color:grey;font-size:10pt;">Capacity: 263.30 KB</p>
           </div>
         </div>
         <br><br><br>
-        <p>Type in the password you want to use to get the file out of the image later</p>
+        <p class="lead">Enter a password</p>
         <input type="password" name="password" id="inputPassword" class="form-control" style="display:inline-block;" placeholder="Password">
         <br>
         <button id="SubmissionButton" class="btn btn-lg btn-primary btn-block" type="button" style="margin:2%; background-color: #517664; border-color:#517664; display:inline-block;">Enter</button>

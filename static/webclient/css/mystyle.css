@@ -76,7 +76,7 @@ button
 #DefaultImageSelector
 {
   overflow-x:scroll;
-  overflow-y:scroll;
+  /* overflow-y:scroll; */
   max-height:50%;
   max-width:50%;
   white-space:nowrap;"
