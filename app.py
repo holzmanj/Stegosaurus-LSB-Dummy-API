@@ -10,6 +10,7 @@ import time
 import parsers
 import time
 from key_generator import generate_keys
+import lsb
 
 import numpy as np
 import tensorflow as tf
@@ -20,8 +21,13 @@ import nn_preproc as nn
 app = Flask(__name__)
 blueprint = Blueprint('api', __name__, url_prefix='/api')
 api = Api(blueprint, title="Steganography API",
-    description="Steganographic API for Stegosaurus using an early version of the neural network (no key support yet).")
+    description="Steganographic API for Stegosaurus using our neural network.")
 app.register_blueprint(blueprint)
+
+lsb_blueprint = Blueprint('lsb', __name__, url_prefix='/lsb/api')
+lsb_api = Api(lsb_blueprint, title="LSB Steganography API",
+    description="Steganographic API using the Least Significant Bit method.")
+app.register_blueprint(lsb_blueprint)
 
 app.secret_key = os.urandom(16)
 
@@ -179,17 +185,17 @@ def img_compare():
 # ╩ ╩╩  ╩  ╚  ╚═╝╝╚╝╚═╝ ╩ ╩╚═╝╝╚╝╚═╝
 # Everything documented in the Swagger page at /api
 
-@api.route("/test")
-@api.doc(id="test", description="Just for testing basic connection to API without dealing with form data or anything.")
-class Test(Resource):
-    def get(self):
-        return "It worked!"
+#  @api.route("/test")
+#  @api.doc(id="test", description="Just for testing basic connection to API without dealing with form data or anything.")
+#  class Test(Resource):
+    #  def get(self):
+        #  return "It worked!"
     
-    @api.expect(parsers.test)
-    def post(self):
-        args = parsers.test.parse_args()
-        msg = args["message"]
-        return "The message you sent was: %s" % msg
+    #  @api.expect(parsers.test)
+    #  def post(self):
+        #  args = parsers.test.parse_args()
+        #  msg = args["message"]
+        #  return "The message you sent was: %s" % msg
 
 @api.route("/get_capacity")
 @api.doc(id="get_capacity", description="Get the amount of embeddable bytes in an image.")
@@ -327,4 +333,98 @@ class Extract(Resource):
                 if os.path.isfile(file_out):
                     os.remove(file_out)
             app.logger.error(str(e))
+            return str(e), 400
+
+#  ╦  ╔═╗╔╗   ╔═╗╔═╗╦  ╔═╗╦ ╦╔╗╔╔═╗╔╦╗╦╔═╗╔╗╔╔═╗
+#  ║  ╚═╗╠╩╗  ╠═╣╠═╝║  ╠╣ ║ ║║║║║   ║ ║║ ║║║║╚═╗
+#  ╩═╝╚═╝╚═╝  ╩ ╩╩  ╩  ╚  ╚═╝╝╚╝╚═╝ ╩ ╩╚═╝╝╚╝╚═╝
+# The same API functions but using LSB instead of the neural network
+@lsb_api.route("/insert")
+@lsb_api.doc(id="insert", description="Insert content into vessel image using secret key.")
+class Insert(Resource):
+    @lsb_api.expect(parsers.insert)
+    def post(self):
+        args = parsers.insert.parse_args()
+        time_0 = time.time()
+        try:
+            image_fname = os.path.join(img_dir, photoset.save(args["image"]))
+        except:
+            app.logger.error("Client sent a file for insertion that is not an image.")
+            return "File uploaded for vessel image is not an image.", 422
+        file_name = os.path.join(files_dir, fileset.save(args["content"]))
+        output_fname = "%d.png" % int(time.time() * 1000)
+        output_fpath = os.path.join(img_dir, output_fname)
+        try:
+            app.logger.info("Calling LSB insert for %s image." % lsb.format_capacity(os.stat(image_fname).st_size))
+            lsb_time_0 = time.time()
+            lsb.insert(image_fname, output_fpath, file_name)
+            lsb_time_diff = time.time() - lsb_time_0
+            app.logger.info("LSB insert finished. Seconds elapsed: %s" % lsb_time_diff)
+            os.remove(image_fname)
+            os.remove(file_name)
+            time_diff = time.time() - time_0
+            app.logger.info("Seconds elapsed handling insert request: %s" % time_diff)
+            return request.url_root + "img/" + output_fname
+        except Exception as e:
+            os.remove(image_fname)
+            os.remove(file_name)
+            app.logger.error(e)
+            return str(e), 400
+
+@lsb_api.route("/extract")
+@lsb_api.doc(id="extract", description="Extract content from vessel image using secret key.")
+class Extract(Resource):
+    @lsb_api.expect(parsers.extract)
+    def post(self):
+        args = parsers.extract.parse_args()
+        time_0 = time.time()
+        # get image from url
+        if args["image_url"] is not None and args["image_url"] != "":
+            app.logger.info("Downloading image from url: %s" % args["image_url"])
+            url_time_0 = time.time()
+            r = requests.get(args["image_url"])
+            url_time_diff = time.time() - url_time_0
+            if r.status_code != 200:
+                app.logger.error("Client sent a link that no data could be downloaded from.")
+                return "Could not get data from link provided", 400
+            ctype = r.headers["content-type"].split("/")
+            if ctype[0] != "image":
+                app.logger.error("Client sent a link to something that is not an image. Content-type: %s" % r.headers["content-type"])
+                return "Data recieved from url was not an image. Content-type: %s" % r.headers["content-type"], 400
+            image_fname = hashlib.md5(r.content).hexdigest() + "." + ctype[1]
+            image_fname = os.path.join(img_dir, image_fname)
+
+            app.logger.info("Seconds elapsed getting image from URL: %s" % url_time_diff)
+
+            with open(image_fname, "wb") as f:
+                f.write(r.content)
+
+        # get image from request form data
+        elif args["image"] is not None:
+            try:
+                image_fname = os.path.join(img_dir, photoset.save(args["image"]))
+            except:
+                app.logger.error("Client uploaded a file for extraction that was not an image.")
+                return "File uploaded for vessel image is not an image.", 422
+        else:
+            app.logger.error("Client called extract without including either an image or image URL.")
+            return "Must include either image, or image_url in request.", 400
+
+        file_out = None
+        try:
+            app.logger.info("Calling LSB extract for %s image." % lsb.format_capacity(os.stat(image_fname).st_size))
+            lsb_time_0 = time.time()
+            file_out = lsb.extract(image_fname, files_dir)
+            lsb_time_diff = time.time() - lsb_time_0
+            app.logger.info("LSB extract finished. Seconds elapsed: %s" % lsb_time_diff)
+            os.remove(image_fname)
+            time_diff = time.time() - time_0
+            app.logger.info("Seconds elapsed handling extract request: %s" % time_diff)
+            return send_file(file_out, as_attachment=True, attachment_filename=os.path.basename(file_out))
+        except Exception as e:
+            if os.path.isfile(image_fname):
+                os.remove(image_fname)
+            if file_out is not None:
+                if os.path.isfile(file_out):
+                    os.remove(file_out)
             return str(e), 400
