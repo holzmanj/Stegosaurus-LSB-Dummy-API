@@ -253,6 +253,42 @@ def batches_to_image(batches, img):
             if batch_no >= n:
                 return img_out
 
+def process_trim(img, sess):
+    """
+    Passes the image's trim (right and bottom pixels that didn't form
+    whole 32x32 blocks) through the neural network with random data
+    to make them visually match the rest of the image.
+    """
+    right_pad, bottom_pad = 0, 0
+    if img.shape[0] % 32 != 0:
+        bottom_pad = 32 - (img.shape[0] % 32)
+    if img.shape[1] % 32 != 0:
+        right_pad = 32 - (img.shape[1] % 32)
+    padded_img = cv2.copyMakeBorder(img, 0, bottom_pad, 0, right_pad, cv2.BORDER_REFLECT)
+
+    h, w, _ = padded_img.shape
+    border_blocks = []
+    # generate list of coordinates for all border blocks
+    if bottom_pad > 0:
+        for i in range(w // 32):
+            border_blocks.append(( (h-32, h), (i*32, (i+1)*32) ))
+    if right_pad > 0:
+        for i in range(h // 32):
+            border_blocks.append(( (i*32, (i+1)*32), (w-32, w) ))
+
+    data_batch = np.zeros((1, 32, 32, 1))
+    for c in border_blocks:
+        block = padded_img[c[0][0]:c[0][1], c[1][0]:c[1][1]].copy()
+        img_batch = image_to_batches(block)
+        data_batch[0] = bytes_to_batch(np.random.bytes(128))
+
+        batch_out = sess.run('alice_out:0', feed_dict={
+            'img_in:0': img_batch,
+            'msg_in:0': data_batch })
+
+        padded_img[c[0][0]:c[0][1], c[1][0]:c[1][1]] = batches_to_image(batch_out, block)
+
+    return padded_img[:img.shape[0], :img.shape[1]]
 
 def insert(cfg, sess, logger, img_path, file_path, key, img_out_path):
     """
@@ -292,8 +328,10 @@ def insert(cfg, sess, logger, img_path, file_path, key, img_out_path):
         img_iterator.put_next_block(block)
         i += 1
 
+    logger.info("Processing trim to match image.")
+    img_out = process_trim(img_iterator.img_out, sess)
     logger.info("Saving output image: %s" % img_out_path)
-    img_iterator.save_output()
+    cv2.imwrite(img_out_path, img_out)
 
 def extract(cfg, sess, logger, img_path, key, output_dir):
     """
