@@ -15,6 +15,12 @@
 
   </head>
   <script>
+	$(document).keypress(
+	  function(event){
+		if (event.which == '13') {
+		  event.preventDefault();
+		}
+	});
   $(document).ready(function()
   		{
 							//Puts the user in the EncryptedSubmissionView
