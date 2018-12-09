@@ -1,0 +1,32 @@
+<html>
+	<head>
+		<title>Compare Images</title>
+		<link href="https://fonts.googleapis.com/css?family=Niramit" rel="stylesheet">
+		<style>
+			body {
+				font-family: "Niramit", sans-serif;
+			}
+		</style>
+	</head>
+	<body>
+		<h2>Compare Image RGB Channels</h2>
+		{% if error %}
+		<h2 style="color: red">{{ error }}</h2>
+		{% endif %}
+		<form method=POST enctype=multipart/form-data action="{{ url_for("img_compare") }}">
+			<h4>First image:</h4>
+			<input type="file" name="img1">
+			<h4>Second image:</h4>
+			<input type="file" name="img2">
+			<br><br>
+			<input type="submit" value="Compare images">
+		</form>
+		<div>
+			<pre>{{ diff_info }}</pre>
+			<img src="{{ diff_img }}"/>
+			<img src="{{ r_img }}"/>
+			<img src="{{ g_img }}"/>
+			<img src="{{ b_img }}"/>
+		</div>
+	</body>
+</html>

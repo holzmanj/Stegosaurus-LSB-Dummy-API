@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="Ryan Batschelet" content="">
+
+    <title>Decryption</title>
+
+
+	<link href="{{ url_for('static', filename='webclient/css/bootstrap-4.1.3-dist/css/bootstrap.min.css') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='webclient/css/mystyle.css') }}" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+  </head>
+  <script>
+  		$(document).ready(function()
+  		{
+							//Puts the user in the EncryptedSubmissionView
+  				$("#DecryptionSubmissionView").show();
+  				$("#DecryptedOutputView").hide();
+
+          $("#SubmissionButton").click(function()
+          {										//Puts the user in the EncryptedOutputView after they submit data
+
+            var inputpassword = $("input[name='password']").val();
+            var inputfile = document.getElementById("inputFile").files[0];
+            var inputlink = $("input[name='inputLinkText']").val();
+
+            if(typeof(inputfile) == "undefined" && inputlink.length == 0)
+            {
+                alert("Upload an image file with embedded data");
+            }
+            else if(inputpassword.length == 0)
+            {
+                alert("Enter a password");
+            }
+            else
+            {
+              setPassword(inputpassword);
+              if(typeof(inputfile) != "undefined")
+              { //this will be replaces with code for sending the image file to php
+                clientSideDecryption(inputfile);
+              }
+              else
+              {
+                clientSideDecryption(inputlink);
+              }
+
+              $("#DecryptionSubmissionView").hide();
+              $("#DecryptedOutputView").show();
+            }
+
+          });
+
+          $("#SubmitAgain").click(function()
+          {										//Puts the user in the EncryptedSubmissionView after they submit data
+                 $("#DecryptionSubmissionView").show();
+                 $("#DecryptedOutputView").hide();
+          });
+
+      });
+
+  	</script>
+  <body>
+
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top">
+      <a class="navbar-brand" href="#">Stegosaurus</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="/encrypt">Encryption <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/decrypt">Decryption</a>
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link" href="/about">About Us</a>
+          </li>
+
+        </ul>
+      </div>
+    </nav>
+        <main class="container">
+          <br><br><br><br><br>
+          <!--DecryptionSubmissionView-->
+          <form id="DecryptionSubmissionView" class="starter-template">
+            <h1>Stegosaurus Decryption</h1>
+            <!-- <p class="lead"> upload a link to a picture you want to use for decrytion, or the image itself.</p> -->
+
+            <p class="lead">Extract data from an image on your computer</p>
+            <input type="file" id="inputFile" name="inputFile" style="margin-bottom:5px;" ></input>
+            <p class="lead" style="font-weight:bold;">Or</p>
+            <p class="lead">Paste the link to an encrypted image</p>
+            <div style="text-align:center"><input type="text" name="inputLinkText" id="inputLink" class="form-control" style="display:inline-block;" placeholder="Image Link"></div>
+			<br><br><br>
+            <p class="lead">Enter the password for this image</p>
+            <input type="password" name="password" id="inputPassword" class="form-control" style="display:inline-block;" placeholder="Password">
+            <br>
+            <button id="SubmissionButton" class="btn btn-lg btn-primary btn-block" type="button" style="margin:2%; background-color: #517664; border-color:#517664; display:inline-block;">Enter Data</button>
+          </form>
+          <!--DecryptedOutputView-->
+          <form id="DecryptedOutputView" class="starter-template">
+            <h1>Decrypted File</h1>
+            <p>Downloading...</p> <br>
+            <button id="SubmitAgain" class="btn btn-lg btn-primary btn-block" type="button" style="margin:2%; background-color: #517664; border-color:#517664; display:inline-block;">Go Back</button>
+
+          </form>
+
+        </main><!-- /.container -->
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
+    <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
+	<script src="{{ url_for('static', filename='webclient/css/bootstrap-4.1.3-dist/popper.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='webclient/css/bootstrap-4.1.3-dist/js/bootstrap.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='webclient/js/decryption.js') }}"></script>
+    <script type="text/javascript" src="https://cdn.rawgit.com/ricmoo/aes-js/e27b99df/index.js"></script>
+    <script type="text/javascript" src="https://cdn.rawgit.com/ricmoo/aes-js/e27b99df/index.js"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='webclient/library/sjcl.js') }}"></script>
+    <script src="https://fastcdn.org/FileSaver.js/1.1.20151003/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/b64-to-blob"></script>
+
+    <script>
+      function takeDecryptionOutput(decryptedFile)
+      {
+
+
+      }
+
+      function takeLinkInput(linkToImage, decryptionKey)
+      {
+
+
+      }
+
+      function takeDefaultInput(defaultInput, decryptionKey)
+      {
+
+
+      }
+
+      function takeFileInput(imageFile, decryptionKey)
+      {
+
+
+      }
+    </script>
+  </body>
+</html>

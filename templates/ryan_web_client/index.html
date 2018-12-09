@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="Ryan Batschelet" content="">
+
+    <title>Encryption</title>
+
+    <!-- Bootstrap core CSS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+	<link href="{{ url_for('static', filename='webclient/css/bootstrap-4.1.3-dist/css/bootstrap.min.css') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='webclient/css/mystyle.css') }}" rel="stylesheet">
+
+  </head>
+  <script>
+	var SELECTED_FILE_SIZE = 0;
+	$(document).keypress(
+	  function(event){
+		if (event.which == '13') {
+		  event.preventDefault();
+		}
+	});
+
+	var formatByteSize = function(byteCount) {
+		var units = ["B", "KB", "MB", "GB"];
+		var unitCount = byteCount;
+		var unitIndex = 0;
+
+		while(unitCount > 1024 && unitIndex < units.length+1) {
+			unitCount /= 1024.0;
+			unitIndex += 1;
+		}
+
+		// print whole number for bytes, and float to 2 places for everything bigger
+		if (unitIndex > 0) {
+			unitCount = unitCount.toFixed(2);
+		}
+
+		return `${unitCount} ${units[unitIndex]}`
+	}
+
+  $(document).ready(function()
+  		{
+							//Puts the user in the EncryptedSubmissionView
+  				$("#EncryptionSubmissionView").show();
+          $("#EncryptionImageView").hide();
+  				$("#EncryptedOutputView").hide();
+
+          var dataToBeEncrypted = "";
+          var isFile = 0;
+
+
+          $("#ImageButton").click(function()
+          {										//Puts the user in the EncryptedOutputView after they submit data
+
+            var file = document.getElementById("inputfile").files[0];
+            var text = $("input[name='inputText']").val();
+
+
+            //Checks to make sure they entered in either a file or a text message was entered, warns user if nothing was
+            if(file == null && text.length == 0)
+            {
+                document.getElementById("fileError").innerHTML = "Please enter a file or a message to be encrypted";
+            }
+            else
+            {
+                if(file != null)
+                {
+				   SELECTED_FILE_SIZE = file.size;
+				   document.getElementById("filesize-label").innerHTML = "Inserting a " + formatByteSize(SELECTED_FILE_SIZE) + " file.";
+                   var reader = new FileReader();
+                   dataToBeEncrypted = reader.readAsText(file);
+                }
+                else
+                {
+					SELECTED_FILE_SIZE = text.length;
+				   document.getElementById("filesize-label").innerHTML = "Inserting a " + formatByteSize(SELECTED_FILE_SIZE) + " text message.";
+                    dataToBeEncrypted = text;
+                }
+
+
+                  $("#EncryptionSubmissionView").hide();
+                  $("#EncryptionImageView").show();
+                  $("#EncryptedOutputView").hide();
+            }
+
+          });
+
+          $("#SubmissionButton").click(function()
+          { //Makes sure that there is an image to have a file embedded into it, sends it to the proper javascript method,
+            var encryptionKey = $("input[name='password']").val();
+            var file = document.getElementById("inputfile").files[0];
+
+            if(encryptionKey.length == 0)
+            {
+              alert("You must enter a password");
+            }
+            else
+            {
+              if($("input[name='inputImageFile']").val().length != 0)
+              {
+                var theimagefile = document.getElementById("inputimagefile").files[0];
+
+                if($("input[name='inputText']").val().length > 0)
+                {
+                  file = $("input[name='inputText']").val();
+                }
+
+                //takeFileInput($("input[name='inputImageFile']").val(), dataToBeEncrypted, encryptionKey);
+                takeFileInput(theimagefile, file, encryptionKey);
+                //takeFileInput(theimagefile, dataToBeEncrypted, encryptionKey);
+
+                $("#EncryptionSubmissionView").hide();
+                $("#EncryptionImageView").hide();
+                $("#EncryptedOutputView").show();
+
+              }
+              //if a valid link is uploaded
+              //call takeLinkInput
+              else if($("input[name='defaultImage']:checked").val() != null)
+              {
+                var encryptionKey = $("input[name='password']").val();
+                //var file = document.getElementById("inputfile").files[0];
+                //var text = $("input[name='inputText']").val();
+
+                if($("input[name='inputText']").val().length > 0)
+                {
+                  file = $("input[name='inputText']").val();
+                }
+
+				  console.log("using file:");
+				  console.log(file);
+                //takeDefaultInput(file, encryptionKey)
+                takeDefaultInput(file, encryptionKey)
+
+                $("#EncryptionSubmissionView").hide();
+                $("#EncryptionImageView").hide();
+                $("#EncryptedOutputView").show();
+              }
+              else
+              {
+                alert("You must select a valid image")
+              }
+            }
+
+          });
+
+          $("#SubmitAgain").click(function()
+          {										//Puts the user in the EncryptedSubmissionView after they submit data
+                 $("#EncryptionSubmissionView").show();
+                 $("#EncryptionImageView").hide();
+                 $("#EncryptedOutputView").hide();
+          });
+
+		// Get capacity of uploaded image
+		$("#inputimagefile").change(function() {
+			document.getElementById("customFileSizeLabel").innerHTML = "Calculating capacity...";
+			var form_data = new FormData();
+			form_data.append("image", 
+				document.getElementById("inputimagefile").files[0]
+			);
+			form_data.append("formatted", true);
+
+			var xhr = new XMLHttpRequest();
+			xhr.addEventListener("readystatechange", function() {
+				if (this.readyState === 4) {
+					if (this.status != 200) {
+						document.getElementById("customFileSizeLabel").innerHTML = "Error: " +
+							this.response.replace(/['"]+/g, '');
+					} else {
+						document.getElementById("customFileSizeLabel").innerHTML = "Capacity: " +
+							this.response.replace(/['"]+/g, '');
+					}
+				}
+			});
+			xhr.open("POST", window.location.origin + "/api/get_capacity");
+			xhr.send(form_data);
+		});
+
+
+
+
+      });
+
+	  	</script>
+  <body>
+
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top">
+      <a class="navbar-brand" href="#">Stegosaurus</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/encrypt">Encryption <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link" href="/decrypt">Decryption</a>
+          </li>
+          <li class="nav-item active">
+            <a class="nav-link" href="/about">About Us</a>
+          </li>
+
+        </ul>
+      </div>
+    </nav>
+
+    <main class="container">
+      <br><br><br><br><br>
+      <!--EncryptionSubmissionView-->
+      <form id="EncryptionSubmissionView">
+        <h1>Stegosaurus Encryption</h1>
+
+        <p class="lead">Upload a file you want to hide within an image</p>
+        <input type="file" id="inputfile" name="inputFile" style="margin-bottom:5px;"></input>
+
+        <p class="lead" style="font-weight:bold;">Or</p>
+        <p class="lead">Type in a text message</p>
+        <div>
+          <input type="text" id="intputtext" name="inputText" ></input>
+        </div>
+        <br>
+        <div>
+          <button id="ImageButton" class="btn btn-lg btn-primary btn-block" type="button" style="margin:2%; background-color: #517664; border-color:#517664; display:inline-block;">Enter</button>
+        </div>
+        <p id="fileError"></p>
+      </form>
+      <form id="EncryptionImageView">
+        <h1>Image Selection</h1>
+        
+		<p style="color:grey;" id="filesize-label">...</p>
+        <p class="lead">Upload your own image to hide the file in</p>
+        <input type="file" id="inputimagefile" name="inputImageFile" style="margin-bottom:5px;"></input>
+		<p style="color:grey;font-size:10pt;" id="customFileSizeLabel"></p>
+<!--
+        <p>Or</p>
+        <div style="text-align:center"><input type="text" name="inputLinkText" id="inputLink" class="form-control" style="display:inline-block;" placeholder="Enter image link here"></div>
+-->
+        <p class="lead" style="font-weight:bold;">Or</p>
+        <p class="lead">Choose one of these default images</p>
+        <div id="DefaultImageSelector">
+          <div class="defaultChoice">
+              <input type="radio" id="defaultImage1" class="defaultImage" name="defaultImage" value="1">
+			  <label class="defaultImageLabel" for="defaultImage1">
+				  <img src="{{ url_for('static', filename='webclient/images/default1.jpg') }}"></img></label>
+			  <p style="color:grey;font-size:10pt;">Capacity: 252.75 KB</p>
+          </div>
+
+          <div class="defaultChoice">
+              <input type="radio" id="defaultImage2" class="defaultImage" name="defaultImage" value="2">
+			  <label class="defaultImageLabel" for="defaultImage2">
+				  <img src="{{ url_for('static', filename='webclient/images/default2.jpg') }}"></img></label>
+			  <p style="color:grey;font-size:10pt;">Capacity: 449.62 KB</p>
+          </div>
+
+          <div class="defaultChoice">
+            <input type="radio" id="defaultImage3" class="defaultImage" name="defaultImage" value="3">
+			<label class="defaultImageLabel" for="defaultImage3">
+				<img src="{{ url_for('static', filename='webclient/images/default3.jpg') }}"></img></label>
+			  <p style="color:grey;font-size:10pt;">Capacity: 252.75 KB</p>
+          </div>
+
+          <div class="defaultChoice">
+            <input type="radio" id="defaultImage4" class="defaultImage" name="defaultImage" value="4">
+			<label class="defaultImageLabel" for="defaultImage4">
+				<img src="{{ url_for('static', filename='webclient/images/default4.jpg') }}"></img></label>
+			  <p style="color:grey;font-size:10pt;">Capacity: 263.30 KB</p>
+          </div>
+        </div>
+        <br><br><br>
+        <p class="lead">Enter a password</p>
+        <input type="password" name="password" id="inputPassword" class="form-control" style="display:inline-block;" placeholder="Password">
+        <br>
+        <button id="SubmissionButton" class="btn btn-lg btn-primary btn-block" type="button" style="margin:2%; background-color: #517664; border-color:#517664; display:inline-block;">Enter</button>
+      </form>
+      <!--EncryptedOutputView-->
+      <form id="EncryptedOutputView" class="starter-template">
+        <h1>Encrypted Image</h1>
+		<img id="outputfile" src="{{ url_for('static', filename='webclient/images/loading.gif') }}" style="max-width:90%; height:auto;"> <!--Placeholder image-->
+        <p id="outputlink">Inserting file into image...</p>    <!--Where the link goes-->
+        <button id="SubmitAgain" type="submit" class="btn btn-lg btn-primary btn-block" style="margin:2%; background-color: #517664; border-color:#517664; display:inline-block;">Go Back</button>
+      </form>
+
+    </main><!-- /.container -->
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
+	<script src="{{ url_for('static', filename='webclient/css/bootstrap-4.1.3-dist/popper.min.js') }}"></script>
+	<script src="{{ url_for('static', filename='webclient/css/bootstrap-4.1.3-dist/js/bootstrap.min.js') }}"></script>
+    <script type="text/javascript" src="https://cdn.rawgit.com/ricmoo/aes-js/e27b99df/index.js"></script>
+	<script src="{{ url_for('static', filename='webclient/js/encryption.js') }}"></script>
+	<script src="{{ url_for('static', filename='webclient/js/encryptDefaultImage.js') }}"></script>
+    <script src="https://fastcdn.org/FileSaver.js/1.1.20151003/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/b64-to-blob"></script>
+
+    <script>
+      function changeView(encryptedFileLink)
+      {
+        document.getElementById("outputlink").innerHTML = encryptedFileLink;
+        $("#outputfile").attr("src", encryptedFileLink);
+
+      }
+
+      function findInput()
+      {
+        var encryptionKey = $("input[name='password']").val();
+        var dataToBeEncrypted = $("input[name='inputFile']").val();
+      }
+
+      function takeDefaultInput(unencryptedData, encryptionKey)
+      {
+        var defaultSelected = $("input[name='defaultImage']:checked").val();
+		var file = null;
+		var xhr = new XMLHttpRequest();
+		var path = "";
+
+		switch(parseInt(defaultSelected, 10)) {
+			case 1:
+				path = "{{ url_for('static', filename='webclient/images/default1.jpg') }}";
+				break;
+			case 2:
+				path = "{{ url_for('static', filename='webclient/images/default2.jpg') }}";
+				break;
+			case 3:
+				path = "{{ url_for('static', filename='webclient/images/default3.jpg') }}";
+				break;
+			case 4:
+				path = "{{ url_for('static', filename='webclient/images/default4.jpg') }}";
+				break;
+			default:
+				alert("Nonexistant default image selected: " + defaultSelected);
+				return;
+		}
+		xhr.open("GET", path);
+		xhr.responseType = "blob";
+
+		xhr.addEventListener("readystatechange", function () {
+			if (this.readyState === 4) {
+				if (this.status != 200) {
+					alert("Something went wrong trying to load the deafult image.");
+					return;
+				}
+				console.log(xhr);
+				file = new File([this.response], "default.jpg");
+				console.log(file);
+				takeInput(file, unencryptedData, encryptionKey);
+			}
+		});
+		xhr.send();
+
+      }
+
+      function takeFileInput(imageFile, unencryptedData, encryptionKey)
+      {
+        //alert("using uploaded image file");
+        console.log("hue hue " + unencryptedData);
+
+
+        takeInput(imageFile, unencryptedData, encryptionKey);
+      }
+    </script>
+	<script type="text/javascript" src="{{ url_for('static', filename='webclient/library/sjcl.js') }}"></script>
+
+  </body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
